@@ -10,6 +10,7 @@ class BaselineCNNLSTM(nn.Module):
             num_layers = 1,
             num_classes = 2,
             dropout = 0.3, 
+            freeze_cnn = True
     ):
         super().__init__()
 
@@ -28,6 +29,9 @@ class BaselineCNNLSTM(nn.Module):
         if freeze_cnn:
             for param in self.cnn.parameters():
                 param.requires_grad = False
+
+            for param in self.cnn[14:].parameters():
+                param.requires_grad = True
         
         self.lstm = nn.LSTM(
             input_size=self.feature_dim,
