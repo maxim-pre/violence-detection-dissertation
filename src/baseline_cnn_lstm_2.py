@@ -1,16 +1,19 @@
 import torch 
 import torch.nn as nn 
 from torchvision.models import mobilenet_v2, MobileNet_V2_Weights
+from sepconv_lstm import SepConvLSTM
 
-class BaselineCNNLSTM(nn.Module):
+
+# this model utilises sepConvLSTM
+class BaselineCNNLSTM2(nn.Module):
 
     def __init__(
             self,
-            hidden_size = 256, 
-            num_layers = 1,
+            hidden_channels = 128, 
             num_classes = 2,
-            dropout = 0.3, 
-            freeze_cnn = True
+            dropout = 0.4, 
+            freeze_cnn = True,
+            partial_freeze_cnn = False
     ):
         super().__init__()
 
@@ -21,29 +24,37 @@ class BaselineCNNLSTM(nn.Module):
         # Extract the feature extractor (all layers except the final classifier)
         self.cnn = mobilenet.features
 
-        # convert (1280, 7, 7) to (1280, 1, 1)
-        self.avgpool = nn.AdaptiveAvgPool2d((1, 1))
-
-        self.feature_dim = 1280
-
         if freeze_cnn:
             for param in self.cnn.parameters():
                 param.requires_grad = False
 
+        if partial_freeze_cnn:
+            for param in self.cnn.parameters():
+                param.requires_grad = False
+                
             for param in self.cnn[14:].parameters():
                 param.requires_grad = True
+
         
-        self.lstm = nn.LSTM(
-            input_size=self.feature_dim,
-            hidden_size=hidden_size,
-            num_layers=num_layers,
-            batch_first=True, 
-            dropout=dropout if num_layers > 1 else 0
+        self.feature_dim = 1280
+
+        self.channel_reduce = nn.Conv2d(
+            in_channels=self.feature_dim,
+            out_channels=128,
+            kernel_size=1
+        )
+
+        self.sepconvlstm = SepConvLSTM(
+            input_channels=128,
+            hidden_channels=hidden_channels,
+            kernel_size=3
         )
         
+        self.avgpool = nn.AdaptiveAvgPool2d((1, 1))
+
         self.classifier = nn.Sequential(
             nn.Dropout(dropout), 
-            nn.Linear(hidden_size, num_classes)
+            nn.Linear(hidden_channels, num_classes)
         )
     
     def forward(self, x):
@@ -67,20 +78,29 @@ class BaselineCNNLSTM(nn.Module):
         features = self.cnn(x)
         # shape: (B*T, 1280, 7, 7)
 
-        # global average pooling
-        features = self.avgpool(features)
-        # shape: (B*T, 1280, 1, 1)
+        features = self.channel_reduce(features)
+        # shape: (B*T, 128, 7, 7)
 
-        features = features.view(B, T, self.feature_dim)
-        # shape: (B, T, 1280)
+        _, C_feat, H_feat, W_feat = features.shape
 
-        lstm_out, (hidden, cell) = self.lstm(features)
+        # restore video structure
+        features = features.view(B, T, C_feat, H_feat, W_feat)
+        # shape: (B, T, 128, 7, 7)
 
-        # use the last hidden state for classification
-        final_hidden = hidden[-1]
+        outputs = self.sepconvlstm(features)
+        # shape: (B, T, hidden_channels, 7, 7)
 
-        # class scores
-        logits = self.classifier(final_hidden)
+        last_hidden = outputs[:, -1]
+        # shape: (B, hidden_channels, 7, 7)
+
+        pooled = self.avgpool(last_hidden)
+        # shape: (B, hidden_channels, 1, 1)
+
+        pooled = torch.flatten(pooled, start_dim=1)
+        # shape: (B, hidden_channels)
+
+        logits = self.classifier(pooled)
+        # shape: (B, 2)
 
         return logits
 
