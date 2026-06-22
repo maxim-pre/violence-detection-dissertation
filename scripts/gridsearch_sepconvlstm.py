@@ -28,7 +28,6 @@ def grid_search(search_space, device):
             f"hc{params['hidden_channels']}_"
             f"drop{params['dropout']}_"
             f"lr{params['learning_rate']}_"
-            f"partial{params['partial_freeze_cnn']}"
         )
 
         save_dir = experiment_root / run_name
