@@ -3,7 +3,8 @@ from matplotlib.pylab import rint
 import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader
-from scripts.common import train_one_epoch, evaluate
+from scripts.common.train_one_epoch import train_one_epoch
+from scripts.common.evaluate import evaluate
 from src.rwf2000 import RWF2000Dataset
 from src.baseline_cnn_lstm import BaselineCNNLSTM
 from src.baseline_cnn_lstm_2 import BaselineCNNLSTM2
