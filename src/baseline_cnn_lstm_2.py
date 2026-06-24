@@ -10,6 +10,7 @@ class BaselineCNNLSTM2(nn.Module):
     def __init__(
             self,
             hidden_channels = 128, 
+            reduced_channels = 64,
             num_classes = 2,
             dropout = 0.4, 
             freeze_cnn = True,
@@ -40,7 +41,7 @@ class BaselineCNNLSTM2(nn.Module):
 
         self.channel_reduce = nn.Conv2d(
             in_channels=self.feature_dim,
-            out_channels=128,
+            out_channels=reduced_channels,
             kernel_size=1
         )
 
@@ -49,12 +50,20 @@ class BaselineCNNLSTM2(nn.Module):
             hidden_channels=hidden_channels,
             kernel_size=3
         )
+
+        self.maxpool = nn.MaxPool2d(
+            kernel_size=2,
+            stride=2
+        )
         
         self.avgpool = nn.AdaptiveAvgPool2d((1, 1))
 
         self.classifier = nn.Sequential(
             nn.Dropout(dropout), 
-            nn.Linear(hidden_channels, num_classes)
+            nn.Linear(hidden_channels, 128),
+            nn.LeakyReLU(0.1),
+            nn.Dropout(dropout),
+            nn.Linear(128, num_classes)
         )
     
     def forward(self, x):
@@ -79,7 +88,7 @@ class BaselineCNNLSTM2(nn.Module):
         # shape: (B*T, 1280, 7, 7)
 
         features = self.channel_reduce(features)
-        # shape: (B*T, 128, 7, 7)
+        # shape: (B*T, reduced_channels, 7, 7)
 
         _, C_feat, H_feat, W_feat = features.shape
 
@@ -92,6 +101,9 @@ class BaselineCNNLSTM2(nn.Module):
 
         last_hidden = outputs[:, -1]
         # shape: (B, hidden_channels, 7, 7)
+
+        last_hidden = self.maxpool(last_hidden)
+        # (B, hidden_channels, 3, 3)
 
         pooled = self.avgpool(last_hidden)
         # shape: (B, hidden_channels, 1, 1)

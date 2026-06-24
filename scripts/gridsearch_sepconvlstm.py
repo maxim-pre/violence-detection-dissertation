@@ -1,4 +1,5 @@
 import pandas as pd
+import gc
 from matplotlib.pylab import rint
 import torch
 import torch.nn as nn
@@ -161,10 +162,21 @@ def grid_search(search_space, device):
         results_df = pd.DataFrame(results)
         results_df.to_csv(experiment_root / "grid_search_results.csv", index=False)
 
-        del model
-        torch.cuda.empty_cache()
+        model = model.cpu()
 
-    print("Grid search complete.")
+        del model
+        del optimizer
+        del scheduler
+        del criterion
+
+        gc.collect()
+
+        try:
+            torch.cuda.empty_cache()
+        except RuntimeError as e:
+            print(f"CUDA cleanup warning: {e}")
+
+            print("Grid search complete.")
 
 
 if __name__ == "__main__":
