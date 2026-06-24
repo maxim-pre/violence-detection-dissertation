@@ -13,12 +13,14 @@ from src.config import DATASET_ROOT
 from src.config import CHECKPOINT_DIR
 import json
 
-def grid_search(search_space, device):
+def grid_search(search_space, device, experiment_root=None):
 
     results = []
 
-    experiment_root = CHECKPOINT_DIR / "baseline_cnn_SepConvLSTM" / "grid_search"
-    experiment_root.mkdir(parents=True, exist_ok=True)
+    if not experiment_root:
+        raise ValueError("Please provide a valid path for the experiment_root parameter.")
+    else:
+        experiment_root.mkdir(parents=True, exist_ok=True)
 
     for run_id, params in enumerate(search_space, start=1):
 
@@ -46,6 +48,7 @@ def grid_search(search_space, device):
             "hidden_channels": params["hidden_channels"],
             "learning_rate": params["learning_rate"],
             "dropout": params["dropout"],
+            "reduced_channels": params["reduced_channels"]
         }
 
         with open(save_dir / "config.json", "w") as f:
@@ -183,16 +186,15 @@ if __name__ == "__main__":
 
     device = torch.device("cuda:5" if torch.cuda.is_available() else "cpu")
 
-    search_space = [
-        {"hidden_channels": 128, "dropout": 0.4, "learning_rate": 1e-5},
-        {"hidden_channels": 128, "dropout": 0.4, "learning_rate": 5e-5},
-        {"hidden_channels": 128, "dropout": 0.5, "learning_rate": 1e-5},
-        {"hidden_channels": 128, "dropout": 0.5, "learning_rate": 5e-5},
+    experiment_root = CHECKPOINT_DIR / "baseline_cnn_SepConvLSTM" / "grid_search_v2"
 
-        {"hidden_channels": 256, "dropout": 0.4, "learning_rate": 1e-5},
-        {"hidden_channels": 256, "dropout": 0.4, "learning_rate": 5e-5},
-        {"hidden_channels": 256, "dropout": 0.5, "learning_rate": 1e-5},
-        {"hidden_channels": 256, "dropout": 0.5, "learning_rate": 5e-5},
+    search_space = [
+    {"hidden_channels": 64,  "reduced_channels": 64,  "dropout": 0.4, "learning_rate": 1e-5},
+    {"hidden_channels": 64,  "reduced_channels": 64,  "dropout": 0.5, "learning_rate": 1e-5},
+    {"hidden_channels": 128, "reduced_channels": 64,  "dropout": 0.4, "learning_rate": 1e-5},
+    {"hidden_channels": 128, "reduced_channels": 64,  "dropout": 0.5, "learning_rate": 1e-5},
+    {"hidden_channels": 64,  "reduced_channels": 128, "dropout": 0.4, "learning_rate": 1e-5},
+    {"hidden_channels": 64,  "reduced_channels": 128, "dropout": 0.5, "learning_rate": 1e-5},
     ]
     
-    grid_search(search_space, device)
+    grid_search(search_space, device, experiment_root=experiment_root)

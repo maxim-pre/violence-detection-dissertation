@@ -74,7 +74,6 @@ class SepConvLSTM(nn.Module):
         """
         x shape: (B, T, C, H, W)
         """
-
         B, T, C, H, W = x.shape
 
         h = torch.zeros(B, self.hidden_channels, H, W, device=x.device)

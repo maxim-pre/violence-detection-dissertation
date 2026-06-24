@@ -47,3 +47,5 @@ temp/
 
 # Environment variables / secrets
 .env.local
+
+*.txt

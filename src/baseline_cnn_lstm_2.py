@@ -46,7 +46,7 @@ class BaselineCNNLSTM2(nn.Module):
         )
 
         self.sepconvlstm = SepConvLSTM(
-            input_channels=128,
+            input_channels=reduced_channels,
             hidden_channels=hidden_channels,
             kernel_size=3
         )
