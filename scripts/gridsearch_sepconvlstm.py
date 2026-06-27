@@ -56,13 +56,14 @@ def grid_search(search_space, device, experiment_root=None):
         
         model = BaselineCNNLSTM2(
             hidden_channels=hyperparameters["hidden_channels"],
+            reduced_channels=hyperparameters["reduced_channels"],
             dropout=hyperparameters["dropout"],
             freeze_cnn=not hyperparameters["partial_freeze_cnn"],
             partial_freeze_cnn=hyperparameters["partial_freeze_cnn"],
         ).to(device)
 
         train_dataset = RWF2000Dataset(DATASET_ROOT, split="train", num_frames=hyperparameters["num_frames"], augment=hyperparameters["augment"])
-        val_dataset = RWF2000Dataset(DATASET_ROOT, split="val", num_frames=hyperparameters["num_frames"], augment=hyperparameters["augment"])
+        val_dataset = RWF2000Dataset(DATASET_ROOT, split="val", num_frames=hyperparameters["num_frames"], augment=False)
 
         train_loader = DataLoader(
             train_dataset,
@@ -184,9 +185,9 @@ def grid_search(search_space, device, experiment_root=None):
 
 if __name__ == "__main__":
 
-    device = torch.device("cuda:5" if torch.cuda.is_available() else "cpu")
+    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
-    experiment_root = CHECKPOINT_DIR / "baseline_cnn_SepConvLSTM" / "grid_search_v2"
+    experiment_root = CHECKPOINT_DIR / "baseline_cnn_SepConvLSTM" / "grid_search_v2_2"
 
     search_space = [
     {"hidden_channels": 64,  "reduced_channels": 64,  "dropout": 0.4, "learning_rate": 1e-5},

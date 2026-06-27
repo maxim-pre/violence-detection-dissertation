@@ -48,4 +48,4 @@ temp/
 # Environment variables / secrets
 .env.local
 
-*.txt
+script_running_command.txt
