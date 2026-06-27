@@ -5,6 +5,7 @@ import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader
 from scripts.common.train_one_epoch import train_one_epoch
+from scripts.train_single_sepconvlstm import train_single_run
 from scripts.common.evaluate import evaluate
 from src.rwf2000 import RWF2000Dataset
 from src.baseline_cnn_lstm import BaselineCNNLSTM
@@ -102,7 +103,7 @@ def grid_search(search_space, device, experiment_root=None):
             optimizer,
             mode="max",
             factor=0.5,
-            patience=3
+            patience=hyperparameters["scheduler_patience"]
         )
 
         for epoch in range(hyperparameters["epochs"]):
@@ -144,6 +145,7 @@ def grid_search(search_space, device, experiment_root=None):
                 }
 
                 torch.save(checkpoint, save_dir / "best_model.pt")
+                print(f"new best model saved. Val Acc: {best_val_acc:.4f}")
 
             else:
                 epochs_without_improvement += 1
@@ -181,6 +183,61 @@ def grid_search(search_space, device, experiment_root=None):
             print(f"CUDA cleanup warning: {e}")
 
             print("Grid search complete.")
+
+
+def grid_search(search_space, device, experiment_root=None):
+
+    results = []
+
+    if not experiment_root:
+        raise ValueError("Please provide a valid path for the experiment_root parameter.")
+    else:
+        experiment_root.mkdir(parents=True, exist_ok=True)
+
+    for run_id, params in enumerate(search_space, start=1):
+
+        print(f"\nStarting run {run_id}/{len(search_space)}")
+        print(params)
+
+        run_name = (
+            f"run_{run_id}_"
+            f"hc{params['hidden_channels']}_"
+            f"drop{params['dropout']}_"
+            f"lr{params['learning_rate']}_"
+        )
+
+        save_dir = experiment_root / run_name
+        save_dir.mkdir(parents=True, exist_ok=True)
+
+        hyperparameters = {
+            "num_frames": 32,
+            "batch_size": 2,
+            "epochs": 50,
+            "augment": True,
+            "partial_freeze_cnn": True,
+            "early_stopping_patience": 10,
+            "scheduler_patience": 3,
+            "hidden_channels": params["hidden_channels"],
+            "learning_rate": params["learning_rate"],
+            "dropout": params["dropout"],
+            "reduced_channels": params["reduced_channels"]
+        }
+
+        result = train_single_run(hyperparameters, device, save_dir, run_name)
+
+        results.append(result)
+
+        results_df = pd.DataFrame(results)
+        results_df.to_csv(experiment_root / "grid_search_results.csv", index=False)
+        
+        gc.collect()
+
+        try:
+            torch.cuda.empty_cache()
+        except RuntimeError as e:
+            print(f"CUDA cleanup warning: {e}")
+
+        print("Grid search complete.")
 
 
 if __name__ == "__main__":
