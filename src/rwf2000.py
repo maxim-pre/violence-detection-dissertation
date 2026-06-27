@@ -1,6 +1,7 @@
 from pathlib import Path
 import cv2
 import torch
+from torchvision.transforms import Normalize
 from torch.utils.data import Dataset
 import numpy as np
 import random
@@ -27,6 +28,12 @@ class RWF2000Dataset(Dataset):
         }
 
         self.samples = self._load_samples()
+
+        # image normalisation for mobile net
+        self.normalise = Normalize(
+            mean=[0.485, 0.456, 0.406],
+            std=[0.229, 0.224, 0.225]
+        )
 
     def _load_samples(self):
         samples = []
@@ -133,6 +140,7 @@ class RWF2000Dataset(Dataset):
             frame = frame.astype(np.float32) / 255.0 # normalize pixel values to [0, 1]
             frame = torch.from_numpy(frame)
             frame = frame.permute(2, 0, 1) # convert from HWC to CHW format for PyTorch
+            frame = self.normalise(frame)
 
             frames.append(frame)
 
