@@ -1,41 +1,65 @@
 import torch 
-import pandas as pd
-import gc
-from matplotlib.pylab import rint
-import torch
-import torch.nn as nn
-from torch.utils.data import DataLoader
-from scripts.common.train_one_epoch import train_one_epoch
-from scripts.train_single_sepconvlstm import train_single_run
-from scripts.common.evaluate import evaluate
-from src.rwf2000 import RWF2000Dataset
-from cnn_lstm_v1 import BaselineCNNLSTM
-from cnn_lstm_v2 import BaselineCNNLSTM2
-from src.config import DATASET_ROOT
+from scripts.single_training_run_cnnlstm import train_single_run
 from src.config import CHECKPOINT_DIR
-import json
 
 if __name__ == "__main__":
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-    run_name = "v1_updated_cropping_and_lr_schedule_64_channels"
-    save_dir = CHECKPOINT_DIR / "baseline_cnn_SepConvLSTM" / run_name
 
-    hyperparameters = {
-        "num_frames": 32,
-        "batch_size": 4,
-        "epochs": 75,
-        "augment": True,
-        "freeze_cnn": True,
-        "partial_freeze_cnn": False,
-        "early_stopping_patience": 15,
-        "scheduler_patience": 5,
-        "hidden_channels": 64,
-        "learning_rate": 1e-4,
-        "dropout": 0.35,
-        "reduced_channels": 64,
-        "cnn_cutoff": 16,
+    model_version = "1"
+
+    if model_version == '1':
+        run_name = "test"
+        save_dir = CHECKPOINT_DIR / "CNN_LSTM_V1" / run_name
+
+        hyperparameters = {
+            # optimizer hyperparameters
+            "num_frames": 32,
+            "augment": True,
+            "batch_size": 4,
+            "learning_rate": 1e-4,
+            "min_lr": 1e-5,
+            "factor": 0.5,
+            "scheduler_patience": 5,
+            "epochs": 75,
+            "early_stopping_patience": 15,
+
+            # model hyperparameters
+            "hidden_size": 64,
+            "num_layers":1,
+            "dropout": 0.35,
+            "freeze_cnn": True,
+            "cnn_cutoff": 16,
         }
 
-    train_single_run(hyperparameters, device, save_dir, run_name)
+        train_single_run(hyperparameters, device, save_dir, run_name, model_version=model_version)
+
+    
+    elif model_version == "2":
+
+        run_name = "v1_updated_cropping_and_lr_schedule_64_channels"
+        save_dir = CHECKPOINT_DIR / "CNN_LSTM_V2" / run_name
+
+        hyperparameters = {
+            # optimizer hyperparameters
+            "num_frames": 32,
+            "augment": True,
+            "batch_size": 4,
+            "learning_rate": 1e-4,
+            "min_lr": 1e-5,
+            "factor": 0.5,
+            "scheduler_patience": 5,
+            "epochs": 75,
+            "early_stopping_patience": 15,
+
+            # model hyperparameters
+            "hidden_channels": 64,
+            "reduced_channels": 64,
+            "dropout": 0.35,
+            "freeze_cnn": True,
+            "partial_freeze_cnn": False,
+            "cnn_cutoff": 16,
+        }
+
+        train_single_run(hyperparameters, device, save_dir, run_name, model_version=model_version)
 
     

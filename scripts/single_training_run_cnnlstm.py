@@ -1,32 +1,34 @@
 import pandas as pd
 import gc
-from matplotlib.pylab import rint
 import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader
 from scripts.common.train_one_epoch import train_one_epoch
 from scripts.common.evaluate import evaluate
+from scripts.common.seed import set_seed, seed_worker
 from src.rwf2000 import RWF2000Dataset
-from cnn_lstm_v1 import CNNLSTMV1
-from cnn_lstm_v2 import CNNLSTMV2
+from src.cnn_lstm_v1 import CNNLSTMV1
+from src.cnn_lstm_v2 import CNNLSTMV2
 from src.config import DATASET_ROOT
 import json
 
 def train_single_run(hyperparameters, device, save_dir, run_name, model_version="v1"):
+    set_seed(hyperparameters["seed"])
     save_dir.mkdir(parents=True, exist_ok=True)
 
     with open(save_dir / "config.json", "w") as f:
         json.dump(hyperparameters, f, indent=4)
 
-    if model_version == 1:
+    if model_version == "1":
         model = CNNLSTMV1(
             hidden_size=hyperparameters["hidden_size"],
             num_layers=hyperparameters["num_layers"], 
             dropout=hyperparameters["dropout"],
-            freeze_cnn=hyperparameters["freeze_cnn"]
+            freeze_cnn=hyperparameters["freeze_cnn"],
+            cnn_cutoff=hyperparameters["cnn_cutoff"]
         ).to(device)
     
-    elif model_version == 2:
+    elif model_version == "2":
         model = CNNLSTMV2(
             hidden_channels=hyperparameters["hidden_channels"],
             reduced_channels=hyperparameters["reduced_channels"],
@@ -35,10 +37,12 @@ def train_single_run(hyperparameters, device, save_dir, run_name, model_version=
             partial_freeze_cnn=hyperparameters["partial_freeze_cnn"],
             cnn_cutoff=hyperparameters["cnn_cutoff"]
         ).to(device)
-        
+
     else:
         raise(ValueError("model version doesn't exist"))
     
+    generator = torch.Generator()
+    generator.manual_seed(hyperparameters["seed"])
 
     train_dataset = RWF2000Dataset(DATASET_ROOT, split="train", num_frames=hyperparameters["num_frames"], augment=hyperparameters["augment"])
     val_dataset = RWF2000Dataset(DATASET_ROOT, split="val", num_frames=hyperparameters["num_frames"], augment=False)
@@ -47,14 +51,18 @@ def train_single_run(hyperparameters, device, save_dir, run_name, model_version=
         train_dataset,
         batch_size=hyperparameters["batch_size"],
         shuffle=True,
-        num_workers=4
+        num_workers=4,
+        worker_init_fn=seed_worker,
+        generator=generator
     )
 
     val_loader = DataLoader(
         val_dataset,
         batch_size=hyperparameters["batch_size"],
         shuffle=False,
-        num_workers=4
+        num_workers=4,
+        worker_init_fn=seed_worker,
+        generator=generator
     )
 
     criterion = nn.CrossEntropyLoss()
@@ -68,16 +76,17 @@ def train_single_run(hyperparameters, device, save_dir, run_name, model_version=
     scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
         optimizer,
         mode="max",
-        factor=0.5,
+        factor=hyperparameters["factor"],
         patience=hyperparameters["scheduler_patience"],
-        min_lr=1e-5
+        min_lr=hyperparameters["min_lr"]
     )
 
     history = {
         "train_loss": [],
         "train_acc": [],
         "val_loss": [],
-        "val_acc": []
+        "val_acc": [],
+        "learning_rate": []
     }
 
     best_val_acc = 0.0
@@ -91,14 +100,14 @@ def train_single_run(hyperparameters, device, save_dir, run_name, model_version=
         train_loss, train_acc = train_one_epoch(model, train_loader, criterion, optimizer, device)
         val_loss, val_acc = evaluate(model, val_loader, criterion, device)
 
-
+        scheduler.step(val_acc)
+        current_lr = optimizer.param_groups[0]["lr"]
+        
         history["train_loss"].append(train_loss)
         history["train_acc"].append(train_acc)
         history["val_loss"].append(val_loss)    
         history["val_acc"].append(val_acc)
-        
-        scheduler.step(val_acc)
-        current_lr = optimizer.param_groups[0]["lr"]
+        history["learning_rate"].append(current_lr)
 
         print(
             f"Train Acc: {train_acc:.4f} | "
