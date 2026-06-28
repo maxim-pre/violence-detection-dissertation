@@ -21,19 +21,19 @@ if __name__ == "__main__":
     save_dir = CHECKPOINT_DIR / "baseline_cnn_SepConvLSTM" / run_name
 
     hyperparameters = {
-        "num_frames": 64,
+        "num_frames": 32,
         "batch_size": 4,
-        "epochs": 50,
+        "epochs": 75,
         "augment": True,
         "freeze_cnn": True,
         "partial_freeze_cnn": False,
         "early_stopping_patience": 15,
         "scheduler_patience": 5,
         "hidden_channels": 128,
-        "learning_rate": 2e-5,
-        "dropout": 0.4,
+        "learning_rate": 1e-4,
+        "dropout": 0.3,
         "reduced_channels": 64,
-        "cnn_cutoff": 16,
+        "cnn_cutoff": 19,
         }
 
     train_single_run(hyperparameters, device, save_dir, run_name)

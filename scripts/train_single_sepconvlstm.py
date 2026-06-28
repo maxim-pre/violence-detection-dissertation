@@ -50,14 +50,16 @@ def train_single_run(hyperparameters, device, save_dir, run_name):
 
     optimizer = torch.optim.Adam(
         filter(lambda p: p.requires_grad, model.parameters()),
-        lr=hyperparameters["learning_rate"]
+        lr=hyperparameters["learning_rate"],
+        amsgrad=True
     )
 
     scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
         optimizer,
         mode="max",
         factor=0.5,
-        patience=hyperparameters["scheduler_patience"]
+        patience=hyperparameters["scheduler_patience"],
+        min_lr=1e-5
     )
 
     history = {
