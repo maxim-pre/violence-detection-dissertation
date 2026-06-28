@@ -20,7 +20,7 @@ class RWF2000Dataset(Dataset):
         self.root_dir = root_dir
         self.split = split
         self.num_frames = num_frames
-        self.image_size = image_size,
+        self.image_size = image_size
         self.crop_resize_size = crop_resize_size
         self.augment = augment
 

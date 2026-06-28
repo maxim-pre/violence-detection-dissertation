@@ -5,7 +5,7 @@ from .sepconv_lstm import SepConvLSTM
 
 
 # this model utilises sepConvLSTM
-class BaselineCNNLSTM2(nn.Module):
+class CNNLSTMV2(nn.Module):
 
     def __init__(
             self,
@@ -23,8 +23,6 @@ class BaselineCNNLSTM2(nn.Module):
         weights = MobileNet_V2_Weights.DEFAULT
         mobilenet = mobilenet_v2(weights=weights)
 
-        # Extract the feature extractor (all layers except the final classifier)
-        #self.cnn = mobilenet.features
 
         # Truncate MobileNet feature extractor
         self.cnn = nn.Sequential(*mobilenet.features[:cnn_cutoff])
@@ -46,8 +44,6 @@ class BaselineCNNLSTM2(nn.Module):
             out = self.cnn(dummy)
             feature_dim = out.shape[1]
         
-        #self.feature_dim = 1280
-
         self.channel_reduce = nn.Conv2d(
             in_channels=feature_dim,
             out_channels=reduced_channels,

@@ -7,27 +7,38 @@ from torch.utils.data import DataLoader
 from scripts.common.train_one_epoch import train_one_epoch
 from scripts.common.evaluate import evaluate
 from src.rwf2000 import RWF2000Dataset
-from src.baseline_cnn_lstm import BaselineCNNLSTM
-from src.baseline_cnn_lstm_2 import BaselineCNNLSTM2
+from cnn_lstm_v1 import CNNLSTMV1
+from cnn_lstm_v2 import CNNLSTMV2
 from src.config import DATASET_ROOT
-from src.config import CHECKPOINT_DIR
 import json
 
-def train_single_run(hyperparameters, device, save_dir, run_name):
+def train_single_run(hyperparameters, device, save_dir, run_name, model_version="v1"):
     save_dir.mkdir(parents=True, exist_ok=True)
 
     with open(save_dir / "config.json", "w") as f:
         json.dump(hyperparameters, f, indent=4)
-    
 
-    model = BaselineCNNLSTM2(
-        hidden_channels=hyperparameters["hidden_channels"],
-        reduced_channels=hyperparameters["reduced_channels"],
-        dropout=hyperparameters["dropout"],
-        freeze_cnn=not hyperparameters["partial_freeze_cnn"],
-        partial_freeze_cnn=hyperparameters["partial_freeze_cnn"],
-        cnn_cutoff=hyperparameters["cnn_cutoff"]
-    ).to(device)
+    if model_version == 1:
+        model = CNNLSTMV1(
+            hidden_size=hyperparameters["hidden_size"],
+            num_layers=hyperparameters["num_layers"], 
+            dropout=hyperparameters["dropout"],
+            freeze_cnn=hyperparameters["freeze_cnn"]
+        ).to(device)
+    
+    elif model_version == 2:
+        model = CNNLSTMV2(
+            hidden_channels=hyperparameters["hidden_channels"],
+            reduced_channels=hyperparameters["reduced_channels"],
+            dropout=hyperparameters["dropout"],
+            freeze_cnn=not hyperparameters["partial_freeze_cnn"],
+            partial_freeze_cnn=hyperparameters["partial_freeze_cnn"],
+            cnn_cutoff=hyperparameters["cnn_cutoff"]
+        ).to(device)
+        
+    else:
+        raise(ValueError("model version doesn't exist"))
+    
 
     train_dataset = RWF2000Dataset(DATASET_ROOT, split="train", num_frames=hyperparameters["num_frames"], augment=hyperparameters["augment"])
     val_dataset = RWF2000Dataset(DATASET_ROOT, split="val", num_frames=hyperparameters["num_frames"], augment=False)
@@ -128,8 +139,13 @@ def train_single_run(hyperparameters, device, save_dir, run_name):
         "final_val_acc": history["val_acc"][-1],
         "final_train_loss": history["train_loss"][-1],
         "final_val_loss": history["val_loss"][-1],
-        "epochs_ran": len(history["train_acc"])
+        "epochs_ran": len(history["train_acc"]), 
         }
+
+    # Save full training history
+    history_df = pd.DataFrame(history)
+    history_df.index.name = "epoch"
+    history_df.to_csv(save_dir / "history.csv")
     
     pd.DataFrame([final_result]).to_csv(save_dir / "summary.csv", index=False)
 

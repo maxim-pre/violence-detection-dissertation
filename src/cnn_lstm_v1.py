@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn 
 from torchvision.models import mobilenet_v2, MobileNet_V2_Weights
 
-class BaselineCNNLSTM(nn.Module):
+class CNNLSTMV1(nn.Module):
 
     def __init__(
             self,
@@ -10,7 +10,8 @@ class BaselineCNNLSTM(nn.Module):
             num_layers = 1,
             num_classes = 2,
             dropout = 0.3, 
-            freeze_cnn = True
+            freeze_cnn = True,
+            cnn_cutoff = 19,
     ):
         super().__init__()
 
@@ -18,20 +19,20 @@ class BaselineCNNLSTM(nn.Module):
         weights = MobileNet_V2_Weights.DEFAULT
         mobilenet = mobilenet_v2(weights=weights)
 
-        # Extract the feature extractor (all layers except the final classifier)
-        self.cnn = mobilenet.features
+        # extract the feature extractor (all layers up to cnn_cutoff)
+        self.cnn = nn.Sequential(*mobilenet.features[:cnn_cutoff])
 
         # convert (1280, 7, 7) to (1280, 1, 1)
         self.avgpool = nn.AdaptiveAvgPool2d((1, 1))
 
-        self.feature_dim = 1280
+        with torch.no_grad():
+            dummy = torch.zeros(1, 3, 224, 224)
+            out = self.cnn(dummy)
+            self.feature_dim = out.shape[1]
 
         if freeze_cnn:
             for param in self.cnn.parameters():
                 param.requires_grad = False
-                
-            for param in self.cnn[14:].parameters():
-                param.requires_grad = True
         
         self.lstm = nn.LSTM(
             input_size=self.feature_dim,
