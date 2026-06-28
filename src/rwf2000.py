@@ -14,12 +14,14 @@ class RWF2000Dataset(Dataset):
         split="train",
         num_frames=32,
         image_size=224,
+        crop_resize_size=320,
         augment=False
     ):
         self.root_dir = root_dir
         self.split = split
         self.num_frames = num_frames
-        self.image_size = image_size
+        self.image_size = image_size,
+        self.crop_resize_size = crop_resize_size
         self.augment = augment
 
         self.label_map = {
@@ -70,7 +72,8 @@ class RWF2000Dataset(Dataset):
         }
 
     def _apply_augmentation(self, frame, aug):
-        # frame is RGB uint8
+
+        frame = cv2.resize(frame, (self.crop_resize_size, self.crop_resize_size))
 
         h, w, _ = frame.shape
 
