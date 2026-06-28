@@ -9,8 +9,8 @@ from scripts.common.train_one_epoch import train_one_epoch
 from scripts.train_single_sepconvlstm import train_single_run
 from scripts.common.evaluate import evaluate
 from src.rwf2000 import RWF2000Dataset
-from src.baseline_cnn_lstm import BaselineCNNLSTM
-from src.baseline_cnn_lstm_2 import BaselineCNNLSTM2
+from cnn_lstm_v1 import BaselineCNNLSTM
+from cnn_lstm_v2 import BaselineCNNLSTM2
 from src.config import DATASET_ROOT
 from src.config import CHECKPOINT_DIR
 import json
