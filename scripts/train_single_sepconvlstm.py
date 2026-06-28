@@ -26,6 +26,7 @@ def train_single_run(hyperparameters, device, save_dir, run_name):
         dropout=hyperparameters["dropout"],
         freeze_cnn=not hyperparameters["partial_freeze_cnn"],
         partial_freeze_cnn=hyperparameters["partial_freeze_cnn"],
+        cnn_cutoff=hyperparameters["cnn_cutoff"]
     ).to(device)
 
     train_dataset = RWF2000Dataset(DATASET_ROOT, split="train", num_frames=hyperparameters["num_frames"], augment=hyperparameters["augment"])

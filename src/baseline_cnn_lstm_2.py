@@ -14,7 +14,8 @@ class BaselineCNNLSTM2(nn.Module):
             num_classes = 2,
             dropout = 0.4, 
             freeze_cnn = True,
-            partial_freeze_cnn = False
+            partial_freeze_cnn = False, 
+            cnn_cutoff = 19,
     ):
         super().__init__()
 
@@ -23,7 +24,10 @@ class BaselineCNNLSTM2(nn.Module):
         mobilenet = mobilenet_v2(weights=weights)
 
         # Extract the feature extractor (all layers except the final classifier)
-        self.cnn = mobilenet.features
+        #self.cnn = mobilenet.features
+
+        # Truncate MobileNet feature extractor
+        self.cnn = nn.Sequential(*mobilenet.features[:cnn_cutoff])
 
         if freeze_cnn:
             for param in self.cnn.parameters():
@@ -36,11 +40,16 @@ class BaselineCNNLSTM2(nn.Module):
             for param in self.cnn[14:].parameters():
                 param.requires_grad = True
 
+        # Infer output channels after truncation
+        with torch.no_grad():
+            dummy = torch.zeros(1, 3, 224, 224)
+            out = self.cnn(dummy)
+            feature_dim = out.shape[1]
         
-        self.feature_dim = 1280
+        #self.feature_dim = 1280
 
         self.channel_reduce = nn.Conv2d(
-            in_channels=self.feature_dim,
+            in_channels=feature_dim,
             out_channels=reduced_channels,
             kernel_size=1
         )
