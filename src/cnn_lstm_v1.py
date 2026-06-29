@@ -22,7 +22,6 @@ class CNNLSTMV1(nn.Module):
         # extract the feature extractor (all layers up to cnn_cutoff)
         self.cnn = nn.Sequential(*mobilenet.features[:cnn_cutoff])
 
-        # convert (1280, 7, 7) to (1280, 1, 1)
         self.avgpool = nn.AdaptiveAvgPool2d((1, 1))
 
         with torch.no_grad():
@@ -66,14 +65,14 @@ class CNNLSTMV1(nn.Module):
 
         # extract CNN feature maps
         features = self.cnn(x)
-        # shape: (B*T, 1280, 7, 7)
+        # shape: (B*T, feature_dim, 7, 7)
 
         # global average pooling
         features = self.avgpool(features)
-        # shape: (B*T, 1280, 1, 1)
+        # shape: (B*T, feature_dim, 1, 1)
 
         features = features.view(B, T, self.feature_dim)
-        # shape: (B, T, 1280)
+        # shape: (B, T, feature_dim)
 
         lstm_out, (hidden, cell) = self.lstm(features)
 

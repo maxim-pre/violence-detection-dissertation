@@ -13,9 +13,8 @@ class CNNLSTMV2(nn.Module):
             reduced_channels = 64,
             num_classes = 2,
             dropout = 0.4, 
-            freeze_cnn = True,
-            partial_freeze_cnn = False, 
             cnn_cutoff = 19,
+            cnn_unfreeze_from=None
     ):
         super().__init__()
 
@@ -27,15 +26,15 @@ class CNNLSTMV2(nn.Module):
         # Truncate MobileNet feature extractor
         self.cnn = nn.Sequential(*mobilenet.features[:cnn_cutoff])
 
-        if freeze_cnn:
+        if cnn_unfreeze_from is None:
             for param in self.cnn.parameters():
                 param.requires_grad = False
 
-        if partial_freeze_cnn:
+        else:
             for param in self.cnn.parameters():
                 param.requires_grad = False
                 
-            for param in self.cnn[14:].parameters():
+            for param in self.cnn[cnn_unfreeze_from:].parameters():
                 param.requires_grad = True
 
         # Infer output channels after truncation
@@ -90,7 +89,7 @@ class CNNLSTMV2(nn.Module):
 
         # extract CNN feature maps
         features = self.cnn(x)
-        # shape: (B*T, 1280, 7, 7)
+        # shape: (B*T, feature_dim, 7, 7)
 
         features = self.channel_reduce(features)
         # shape: (B*T, reduced_channels, 7, 7)

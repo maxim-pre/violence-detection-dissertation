@@ -6,6 +6,7 @@ from torch.utils.data import DataLoader
 from scripts.common.train_one_epoch import train_one_epoch
 from scripts.common.evaluate import evaluate
 from scripts.common.seed import set_seed, seed_worker
+from scripts.common.optimizer import build_optimizer
 from src.rwf2000 import RWF2000Dataset
 from src.cnn_lstm_v1 import CNNLSTMV1
 from src.cnn_lstm_v2 import CNNLSTMV2
@@ -33,9 +34,8 @@ def train_single_run(hyperparameters, device, save_dir, run_name, model_version=
             hidden_channels=hyperparameters["hidden_channels"],
             reduced_channels=hyperparameters["reduced_channels"],
             dropout=hyperparameters["dropout"],
-            freeze_cnn=not hyperparameters["partial_freeze_cnn"],
-            partial_freeze_cnn=hyperparameters["partial_freeze_cnn"],
-            cnn_cutoff=hyperparameters["cnn_cutoff"]
+            cnn_cutoff=hyperparameters["cnn_cutoff"],
+            cnn_unfreeze_from=hyperparameters["cnn_unfreeze_from"]
         ).to(device)
 
     else:
@@ -72,6 +72,8 @@ def train_single_run(hyperparameters, device, save_dir, run_name, model_version=
         lr=hyperparameters["learning_rate"],
         amsgrad=True
     )
+
+    optimizer = build_optimizer(model, hyperparameters)
 
     scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
         optimizer,

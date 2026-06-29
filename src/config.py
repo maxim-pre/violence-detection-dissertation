@@ -24,7 +24,7 @@ DEFAULT_TRAINING_PARAMS_V1 = {
     "num_layers":1,
     "dropout": 0.35,
     "freeze_cnn": True,
-    "cnn_cutoff": 16,
+    "cnn_cutoff": 19,
     "seed": 42,
 }
 
@@ -34,8 +34,10 @@ DEFAULT_TRAINING_PARAMS_V2= {
     "augment": True,
     "batch_size": 4,
     "learning_rate": 1e-4,
+    "cnn_learning_rate": 1e-5,
     "min_lr": 1e-5,
     "factor": 0.5,
+    "use_differential_lr": False,
     "scheduler_patience": 5,
     "epochs": 75,
     "early_stopping_patience": 15,
@@ -45,7 +47,6 @@ DEFAULT_TRAINING_PARAMS_V2= {
     "hidden_channels": 64,
     "reduced_channels": 64,
     "dropout": 0.35,
-    "freeze_cnn": True,
-    "partial_freeze_cnn": False,
-    "cnn_cutoff": 16,
+    "cnn_cutoff": 19,
+    "cnn_unfreeze_from": 19,
 }
