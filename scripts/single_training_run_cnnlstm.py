@@ -33,6 +33,7 @@ def train_single_run(hyperparameters, device, save_dir, run_name, model_version=
         model = CNNLSTMV2(
             hidden_channels=hyperparameters["hidden_channels"],
             reduced_channels=hyperparameters["reduced_channels"],
+            classifier_hidden_size=hyperparameters["classifier_hidden_size"],
             dropout=hyperparameters["dropout"],
             cnn_cutoff=hyperparameters["cnn_cutoff"],
             cnn_unfreeze_from=hyperparameters["cnn_unfreeze_from"]

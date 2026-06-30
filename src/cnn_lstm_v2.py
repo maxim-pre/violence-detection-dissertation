@@ -11,6 +11,7 @@ class CNNLSTMV2(nn.Module):
             self,
             hidden_channels = 128, 
             reduced_channels = 64,
+            classifier_hidden_size = 128,
             num_classes = 2,
             dropout = 0.4, 
             cnn_cutoff = 19,
@@ -64,10 +65,10 @@ class CNNLSTMV2(nn.Module):
 
         self.classifier = nn.Sequential(
             nn.Dropout(dropout), 
-            nn.Linear(hidden_channels, 128),
+            nn.Linear(hidden_channels, classifier_hidden_size),
             nn.LeakyReLU(0.1),
             nn.Dropout(dropout),
-            nn.Linear(128, num_classes)
+            nn.Linear(classifier_hidden_size, num_classes)
         )
     
     def forward(self, x):

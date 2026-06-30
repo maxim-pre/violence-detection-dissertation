@@ -46,7 +46,8 @@ DEFAULT_TRAINING_PARAMS_V2= {
     # model hyperparameters
     "hidden_channels": 64,
     "reduced_channels": 64,
+    "classifier_hidden_size": 128,
     "dropout": 0.35,
     "cnn_cutoff": 19,
-    "cnn_unfreeze_from": 19,
+    "cnn_unfreeze_from": None,
 }
