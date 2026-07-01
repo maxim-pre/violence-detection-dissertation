@@ -23,6 +23,7 @@ class CNNLSTMV2(nn.Module):
         weights = MobileNet_V2_Weights.DEFAULT
         mobilenet = mobilenet_v2(weights=weights)
 
+        classifier_input_size = hidden_channels * 3 * 3
 
         # Truncate MobileNet feature extractor
         self.cnn = nn.Sequential(*mobilenet.features[:cnn_cutoff])
@@ -65,7 +66,7 @@ class CNNLSTMV2(nn.Module):
 
         self.classifier = nn.Sequential(
             nn.Dropout(dropout), 
-            nn.Linear(hidden_channels, classifier_hidden_size),
+            nn.Linear(classifier_input_size, classifier_hidden_size),
             nn.LeakyReLU(0.1),
             nn.Dropout(dropout),
             nn.Linear(classifier_hidden_size, num_classes)
@@ -110,10 +111,10 @@ class CNNLSTMV2(nn.Module):
         last_hidden = self.maxpool(last_hidden)
         # (B, hidden_channels, 3, 3)
 
-        pooled = self.avgpool(last_hidden)
+        #pooled = self.avgpool(last_hidden)
         # shape: (B, hidden_channels, 1, 1)
 
-        pooled = torch.flatten(pooled, start_dim=1)
+        pooled = torch.flatten(last_hidden, start_dim=1)
         # shape: (B, hidden_channels)
 
         logits = self.classifier(pooled)

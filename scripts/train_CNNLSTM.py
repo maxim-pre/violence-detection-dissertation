@@ -20,9 +20,9 @@ if __name__ == "__main__":
     
     elif model_version == "2":
 
-        run_name = "test"
+        run_name = "test_64_frames"
         save_dir = CHECKPOINT_DIR / "CNN_LSTM_V2" / run_name
-        params = {"use_differential_lr": True}
+        params = {"num_frames": 64}
         hyperparameters = DEFAULT_TRAINING_PARAMS_V2.copy()
         hyperparameters.update(params)
 

@@ -6,6 +6,12 @@ PROJECT_ROOT = Path("/homes/mp2940/violence-detection-dissertation")
 DATASET_ROOT = Path("/homes/mp2940/demo/datasets/rwf-2000/RWF-2000")
 CHECKPOINT_DIR = Path("/homes/mp2940/violence-detection-dissertation/checkpoints")
 
+DEFAULT_AUGMENTATION_PARAMS = {
+    "flip_prob": 0.5,
+    "brightness_range": (0.85, 1.15),
+    "contrast_range": (0.85, 1.15),
+    "crop_scale_range": (0.85, 1.0),
+}
 
 DEFAULT_TRAINING_PARAMS_V1 = {
     # optimizer hyperparameters
@@ -41,6 +47,7 @@ DEFAULT_TRAINING_PARAMS_V2= {
     "scheduler_patience": 5,
     "epochs": 75,
     "early_stopping_patience": 15,
+    "weight_decay": 0,
     "seed": 42,
 
     # model hyperparameters

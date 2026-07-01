@@ -3,6 +3,7 @@ import cv2
 import torch
 from torchvision.transforms import Normalize
 from torch.utils.data import Dataset
+from src.config import DEFAULT_AUGMENTATION_PARAMS
 import numpy as np
 import random
 
@@ -15,7 +16,8 @@ class RWF2000Dataset(Dataset):
         num_frames=32,
         image_size=224,
         crop_resize_size=320,
-        augment=False
+        augment=False,
+        augmentation_params=DEFAULT_AUGMENTATION_PARAMS
     ):
         self.root_dir = root_dir
         self.split = split
@@ -23,6 +25,7 @@ class RWF2000Dataset(Dataset):
         self.image_size = image_size
         self.crop_resize_size = crop_resize_size
         self.augment = augment
+        self.augmentation_params = augmentation_params
 
         self.label_map = {
             "NonFight": 0,
@@ -60,12 +63,12 @@ class RWF2000Dataset(Dataset):
                 "crop_y": 0.0,
             }
 
-        crop_scale = random.uniform(0.85, 1.0)
+        crop_scale = random.uniform(self.augmentation_params["crop_scale_range"][0], self.augmentation_params["crop_scale_range"][1])
 
         return {
-            "flip": random.random() < 0.5,
-            "brightness": random.uniform(0.85, 1.15),
-            "contrast": random.uniform(0.85, 1.15),
+            "flip": random.random() < self.augmentation_params["flip_prob"],
+            "brightness": random.uniform(self.augmentation_params["brightness_range"][0], self.augmentation_params["brightness_range"][1]),
+            "contrast": random.uniform(self.augmentation_params["contrast_range"][0], self.augmentation_params["contrast_range"][1]),
             "crop_scale": crop_scale,
             "crop_x": random.uniform(0.0, 1.0),
             "crop_y": random.uniform(0.0, 1.0),
