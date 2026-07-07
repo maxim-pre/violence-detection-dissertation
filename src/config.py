@@ -35,7 +35,8 @@ DEFAULT_TRAINING_PARAMS_V1 = {
 }
 
 DEFAULT_TRAINING_PARAMS_V2= {
-    # optimizer hyperparameters
+    # general hyperparameters
+    "input_mode": "rgb", 
     "num_frames": 32,
     "augment": True,
     "batch_size": 4,
@@ -48,6 +49,7 @@ DEFAULT_TRAINING_PARAMS_V2= {
     "epochs": 75,
     "early_stopping_patience": 15,
     "weight_decay": 0,
+    "amsgrad": False,
     "seed": 42,
 
     # model hyperparameters

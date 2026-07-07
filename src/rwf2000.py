@@ -17,7 +17,8 @@ class RWF2000Dataset(Dataset):
         image_size=224,
         crop_resize_size=320,
         augment=False,
-        augmentation_params=DEFAULT_AUGMENTATION_PARAMS
+        augmentation_params=DEFAULT_AUGMENTATION_PARAMS,
+        input_mode="rgb"
     ):
         self.root_dir = root_dir
         self.split = split
@@ -26,6 +27,10 @@ class RWF2000Dataset(Dataset):
         self.crop_resize_size = crop_resize_size
         self.augment = augment
         self.augmentation_params = augmentation_params
+        self.input_mode = input_mode
+
+        if self.input_mode not in ["rgb", "diff"]:
+            raise ValueError("Invalid input_mode. Must be 'rgb' or 'diff'.")
 
         self.label_map = {
             "NonFight": 0,
@@ -111,12 +116,12 @@ class RWF2000Dataset(Dataset):
     def __len__(self):
         return len(self.samples)
 
-    def _sample_frame_indices(self, total_frames):
+    def _sample_frame_indices(self, total_frames, frames_to_sample):
         # Sample frame indices uniformly across the video
         return np.linspace(
             0,
             total_frames - 1,
-            self.num_frames,
+            frames_to_sample,
             dtype=int
         )
 
@@ -124,7 +129,9 @@ class RWF2000Dataset(Dataset):
         cap = cv2.VideoCapture(str(video_path))
 
         total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
-        frame_indices = self._sample_frame_indices(total_frames)
+        frames_to_sample = self.num_frames + 1 if self.input_mode == "diff" else self.num_frames
+
+        frame_indices = self._sample_frame_indices(total_frames, frames_to_sample)
         aug_params = self._get_augmentation_params()
 
         frames = []
@@ -143,16 +150,35 @@ class RWF2000Dataset(Dataset):
             else:
                 frame = cv2.resize(frame, (self.image_size, self.image_size))
 
-            frame = frame.astype(np.float32) / 255.0 # normalize pixel values to [0, 1]
-            frame = torch.from_numpy(frame)
-            frame = frame.permute(2, 0, 1) # convert from HWC to CHW format for PyTorch
-            frame = self.normalise(frame)
-
             frames.append(frame)
 
         cap.release()
 
-        video_tensor = torch.stack(frames)
+        if self.input_mode == "rgb":
+            processed_frames = []
+
+            for frame in frames:
+                frame = frame.astype(np.float32) / 255.0 # normalize pixel values to [0, 1]
+                frame = torch.from_numpy(frame)
+                frame = frame.permute(2, 0, 1) # convert from HWC to CHW format for PyTorch
+                frame = self.normalise(frame)
+                processed_frames.append(frame)
+        
+        elif self.input_mode == "diff":
+            processed_frames = []
+
+            for i in range(len(frames) -1):
+                diff = frames[i+1].astype(np.float32) - frames[i].astype(np.float32)
+
+                # Scale differences from [-255, 255] to [-1, 1]
+                diff = diff / 255.0
+
+                diff = torch.from_numpy(diff)
+                diff = diff.permute(2, 0, 1)
+
+                processed_frames.append(diff)
+
+        video_tensor = torch.stack(processed_frames) 
 
         return video_tensor
 

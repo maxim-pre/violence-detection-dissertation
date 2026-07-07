@@ -13,15 +13,21 @@ from src.cnn_lstm_v2 import CNNLSTMV2
 from src.config import DATASET_ROOT, DEFAULT_AUGMENTATION_PARAMS
 import json
 
-def train_single_run(hyperparameters, device, save_dir, run_name, model_version="v1", augmentation_params=DEFAULT_AUGMENTATION_PARAMS):
+def train_single_run(hyperparameters, device, save_dir, run_name, model_version="v1", augmentation_params=None):
     set_seed(hyperparameters["seed"])
     save_dir.mkdir(parents=True, exist_ok=True)
 
-    if augmentation_params is None:
-        augmentation_params = DEFAULT_AUGMENTATION_PARAMS
+    augmentation_config = DEFAULT_AUGMENTATION_PARAMS.copy()
 
+    if augmentation_params is not None:
+        augmentation_config.update(augmentation_params)
+
+    
     with open(save_dir / "config.json", "w") as f:
         json.dump(hyperparameters, f, indent=4)
+
+    with open(save_dir / "augmentation_config.json", "w") as f:
+        json.dump(augmentation_config, f, indent=4)
 
     if model_version == "1":
         model = CNNLSTMV1(
@@ -48,8 +54,8 @@ def train_single_run(hyperparameters, device, save_dir, run_name, model_version=
     generator = torch.Generator()
     generator.manual_seed(hyperparameters["seed"])
 
-    train_dataset = RWF2000Dataset(DATASET_ROOT, split="train", num_frames=hyperparameters["num_frames"], augment=hyperparameters["augment"], augmentation_params=augmentation_params)
-    val_dataset = RWF2000Dataset(DATASET_ROOT, split="val", num_frames=hyperparameters["num_frames"], augment=False)
+    train_dataset = RWF2000Dataset(DATASET_ROOT, split="train", num_frames=hyperparameters["num_frames"], augment=hyperparameters["augment"], augmentation_params=augmentation_config, input_mode=hyperparameters["input_mode"])
+    val_dataset = RWF2000Dataset(DATASET_ROOT, split="val", num_frames=hyperparameters["num_frames"], augment=False, input_mode=hyperparameters["input_mode"])
 
     train_loader = DataLoader(
         train_dataset,

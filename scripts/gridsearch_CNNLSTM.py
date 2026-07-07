@@ -15,10 +15,13 @@ def grid_search(search_space, device, experiment_root=None, model_version="1"):
 
     for run_id, params in enumerate(search_space, start=1):
 
+        params = params.copy()
+
+        augmentation_params = params.pop("augmentation_params", None)
+        run_name = params.pop("run_name", f"run_{run_id}")
+
         print(f"\nStarting run {run_id}/{len(search_space)}")
         print(params)
-
-        run_name = (f"run_{run_id}")
 
         save_dir = experiment_root / run_name
         save_dir.mkdir(parents=True, exist_ok=True)
@@ -32,7 +35,7 @@ def grid_search(search_space, device, experiment_root=None, model_version="1"):
         
         hyperparameters.update(params)
 
-        result = train_single_run(hyperparameters, device, save_dir, run_name, model_version=model_version)
+        result = train_single_run(hyperparameters, device, save_dir, run_name, model_version=model_version, augmentation_params=augmentation_params)
 
         results.append(result)
 

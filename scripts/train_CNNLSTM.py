@@ -20,9 +20,9 @@ if __name__ == "__main__":
     
     elif model_version == "2":
 
-        run_name = "test_64_frames"
+        run_name = "test_frame_differences"
         save_dir = CHECKPOINT_DIR / "CNN_LSTM_V2" / run_name
-        params = {"num_frames": 64}
+        params = {"input_mode": "diff"}
         hyperparameters = DEFAULT_TRAINING_PARAMS_V2.copy()
         hyperparameters.update(params)
 
