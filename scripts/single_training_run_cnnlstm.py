@@ -77,12 +77,6 @@ def train_single_run(hyperparameters, device, save_dir, run_name, model_version=
 
     criterion = nn.CrossEntropyLoss()
 
-    optimizer = torch.optim.Adam(
-        filter(lambda p: p.requires_grad, model.parameters()),
-        lr=hyperparameters["learning_rate"],
-        amsgrad=True
-    )
-
     optimizer = build_optimizer(model, hyperparameters)
 
     scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(

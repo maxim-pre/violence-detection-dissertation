@@ -3,8 +3,9 @@ import pandas as pd
 import gc
 from scripts.single_training_run_cnnlstm import train_single_run
 from src.config import DEFAULT_TRAINING_PARAMS_V1, DEFAULT_TRAINING_PARAMS_V2
+from scripts.common.get_device import get_available_device
 
-def grid_search(search_space, device, experiment_root=None, model_version="1"):
+def grid_search(search_space, experiment_root=None, model_version="1"):
 
     results = []
 
@@ -35,7 +36,26 @@ def grid_search(search_space, device, experiment_root=None, model_version="1"):
         
         hyperparameters.update(params)
 
-        result = train_single_run(hyperparameters, device, save_dir, run_name, model_version=model_version, augmentation_params=augmentation_params)
+        try:
+            device = get_available_device()
+            result = train_single_run(hyperparameters, device, save_dir, run_name, model_version=model_version, augmentation_params=augmentation_params)
+        except torch.cuda.OutOfMemoryError as e:
+            print(f"OOM on {run_name}. Cleaning cache and retrying once...")
+            gc.collect()
+            torch.cuda.empty_cache()
+
+            try:
+                device = get_available_device()
+                result = train_single_run(hyperparameters, device, save_dir, run_name, model_version=model_version, augmentation_params=augmentation_params)
+            
+            except torch.cuda.OutOfMemoryError as e:
+                print(f"out of memory again on {run_name}. Skipping run.")
+
+                result = {
+                    "run_name": run_name,
+                    **hyperparameters,
+                    "status": "OOM"
+                }
 
         results.append(result)
 
