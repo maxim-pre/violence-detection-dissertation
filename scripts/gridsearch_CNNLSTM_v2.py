@@ -5,126 +5,108 @@ from scripts.gridsearch_CNNLSTM import grid_search
 
 if __name__ == "__main__":
 
-    experiment_root = CHECKPOINT_DIR / "CNN_LSTM_V3" / "grid_search_1"
+    experiment_root = CHECKPOINT_DIR / "CNN_LSTM_V3" / "grid_search_2"
 
     search_space = [
-        # baseline reference
         {
-            "run_name": "baseline"
+            "run_name": "minlr1e6",
+            "min_lr": 1e-6,
         },
 
-        # temporal context
         {
-            "run_name": "frames_48",
-            "num_frames": 48
+            "run_name": "reduced80",
+            "reduced_channels": 80,
+            "min_lr": 1e-6,
         },
         {
-            "run_name": "frames_64",
-            "num_frames": 64
-        },
-
-        # dropout
-        {
-            "run_name": "dropout_030",
-            "dropout": 0.30
-        },
-        {
-            "run_name": "dropout_040",
-            "dropout": 0.40
-        },
-        {
-            "run_name": "dropout_045",
-            "dropout": 0.45
-        },
-
-        # SepConvLSTM capacity
-        {
-            "run_name": "hidden_96",
-            "hidden_channels": 96
-        },
-        {
-            "run_name": "hidden_128",
-            "hidden_channels": 128
-        },
-
-        # CNN channel reduction
-        {
-            "run_name": "reduced_96",
-            "reduced_channels": 96
-        },
-        {
-            "run_name": "reduced_128",
-            "reduced_channels": 128
-        },
-
-        # classifier capacity
-        {
-            "run_name": "classifier_64",
-            "classifier_hidden_size": 64
-        },
-        {
-            "run_name": "classifier_256",
-            "classifier_hidden_size": 256
-        },
-
-        # optimiser
-        {
-            "run_name": "lr_5e-5",
-            "learning_rate": 5e-5
-        },
-        {
-            "run_name": "lr_2e-4",
-            "learning_rate": 2e-4
-        },
-
-        # combined promising variants
-        {
-            "run_name": "frames48_hidden96",
-            "num_frames": 48,
-            "hidden_channels": 96
-        },
-        {
-            "run_name": "frames48_reduced96",
-            "num_frames": 48,
-            "reduced_channels": 96
-        },
-        {
-            "run_name": "frames64_dropout40",
-            "num_frames": 64,
-            "dropout": 0.40
-        },
-        {
-            "run_name": "hidden96_dropout40",
-            "hidden_channels": 96,
-            "dropout": 0.40
-        },
-        {
-            "run_name": "reduced96_dropout40",
+            "run_name": "reduced96",
             "reduced_channels": 96,
-            "dropout": 0.40
+            "min_lr": 1e-6,
+        },
+        {
+            "run_name": "reduced112",
+            "reduced_channels": 112,
+            "min_lr": 1e-6,
         },
 
-        # augmentation
         {
-            "run_name": "strong_crop",
-            "augmentation_params": {
-                "crop_scale_range": (0.75, 1.0)
-            }
+            "run_name": "reduced96_lr5e5",
+            "reduced_channels": 96,
+            "learning_rate": 5e-5,
+            "min_lr": 1e-6,
         },
         {
-            "run_name": "strong_colour",
+            "run_name": "reduced96_lr75e5",
+            "reduced_channels": 96,
+            "learning_rate": 7.5e-5,
+            "min_lr": 1e-6,
+        },
+
+        {
+            "run_name": "reduced96_dropout030",
+            "reduced_channels": 96,
+            "dropout": 0.30,
+            "min_lr": 1e-6,
+        },
+        {
+            "run_name": "reduced96_dropout040",
+            "reduced_channels": 96,
+            "dropout": 0.40,
+            "min_lr": 1e-6,
+        },
+        {
+            "run_name": "reduced96_dropout045",
+            "reduced_channels": 96,
+            "dropout": 0.45,
+            "min_lr": 1e-6,
+        },
+
+        {
+            "run_name": "reduced96_classifier64",
+            "reduced_channels": 96,
+            "classifier_hidden_size": 64,
+            "min_lr": 1e-6,
+        },
+        {
+            "run_name": "reduced96_classifier256",
+            "reduced_channels": 96,
+            "classifier_hidden_size": 256,
+            "min_lr": 1e-6,
+        },
+
+        {
+            "run_name": "reduced96_patience20",
+            "reduced_channels": 96,
+            "early_stopping_patience": 20,
+            "min_lr": 1e-6,
+        },
+
+        {
+            "run_name": "reduced96_strong_crop",
+            "reduced_channels": 96,
+            "min_lr": 1e-6,
+            "augmentation_params": {
+                "crop_scale_range": (0.75, 1.0),
+            },
+        },
+        {
+            "run_name": "reduced96_strong_colour",
+            "reduced_channels": 96,
+            "min_lr": 1e-6,
             "augmentation_params": {
                 "brightness_range": (0.80, 1.20),
-                "contrast_range": (0.80, 1.20)
-            }
+                "contrast_range": (0.80, 1.20),
+            },
         },
         {
-            "run_name": "strong_aug",
+            "run_name": "reduced96_strong_aug",
+            "reduced_channels": 96,
+            "min_lr": 1e-6,
             "augmentation_params": {
                 "crop_scale_range": (0.75, 1.0),
                 "brightness_range": (0.80, 1.20),
-                "contrast_range": (0.80, 1.20)
-            }
+                "contrast_range": (0.80, 1.20),
+            },
         },
     ]
     

@@ -18,7 +18,8 @@ class RWF2000Dataset(Dataset):
         crop_resize_size=320,
         augment=False,
         augmentation_params=DEFAULT_AUGMENTATION_PARAMS,
-        input_mode="rgb"
+        input_mode="rgb",
+        return_rgb_frames=False
     ):
         self.root_dir = root_dir
         self.split = split
@@ -28,6 +29,7 @@ class RWF2000Dataset(Dataset):
         self.augment = augment
         self.augmentation_params = augmentation_params
         self.input_mode = input_mode
+        self.return_rgb_frames = return_rgb_frames
 
         if self.input_mode not in ["rgb", "diff"]:
             raise ValueError("Invalid input_mode. Must be 'rgb' or 'diff'.")
@@ -154,6 +156,15 @@ class RWF2000Dataset(Dataset):
 
         cap.release()
 
+        if self.return_rgb_frames:
+            rbg_frames = []
+
+            for frame in frames:
+                frame = frame.astype(np.float32) / 255.0 # normalize pixel values to [0, 1]
+                frame = torch.from_numpy(frame)
+                frame = frame.permute(2, 0, 1) # convert from HWC to CHW format for PyTorch
+                rbg_frames.append(frame)
+
         if self.input_mode == "rgb":
             processed_frames = []
 
@@ -180,10 +191,20 @@ class RWF2000Dataset(Dataset):
 
         video_tensor = torch.stack(processed_frames) 
 
+        if self.return_rgb_frames:
+            rbg_tensor = torch.stack(rbg_frames)
+            return video_tensor, rbg_tensor
+
         return video_tensor
 
     def __getitem__(self, idx):
         video_path, label = self.samples[idx]
+
+        if self.return_rgb_frames:
+            video, rgb_frames = self._load_video(video_path)
+            label = torch.tensor(label, dtype=torch.long)
+
+            return video, label, rgb_frames
 
         video = self._load_video(video_path)
         label = torch.tensor(label, dtype=torch.long)
