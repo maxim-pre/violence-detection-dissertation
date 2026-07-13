@@ -14,7 +14,7 @@ class GradCAM:
     def _save_activations(self, module, inputs, output):
         self.activations = output
     
-    def _save_gradients(self, module, grad_input, grad_output):
+    def _save_gradients(self, module, inputs, grad_output):
         self.gradients = grad_output[0]
     
     def remove_hooks(self):

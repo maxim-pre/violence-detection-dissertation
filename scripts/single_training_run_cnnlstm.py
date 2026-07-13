@@ -38,7 +38,7 @@ def train_single_run(hyperparameters, device, save_dir, run_name, model_version=
             cnn_cutoff=hyperparameters["cnn_cutoff"]
         ).to(device)
     
-    elif model_version == "2":
+    elif model_version == "2" or model_version == "3":
         model = CNNLSTMV2(
             hidden_channels=hyperparameters["hidden_channels"],
             reduced_channels=hyperparameters["reduced_channels"],
@@ -47,7 +47,6 @@ def train_single_run(hyperparameters, device, save_dir, run_name, model_version=
             cnn_cutoff=hyperparameters["cnn_cutoff"],
             cnn_unfreeze_from=hyperparameters["cnn_unfreeze_from"]
         ).to(device)
-
     else:
         raise(ValueError("model version doesn't exist"))
     

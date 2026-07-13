@@ -38,3 +38,30 @@ def plot_gradcam_over_rgb(heatmaps, rgb_frames, label, prediction, alpha=0.45):
     )
     plt.tight_layout()
     plt.show()
+
+
+def plot_single_frame_gradcam(heatmaps, rgb_frames, frame_index, label, prediction, alpha=0.45):
+    class_labels = {0: "Non-Violent", 1: "Violent"}
+
+    rgb_frame = rgb_frames[frame_index + 1]
+    rgb_frame = rgb_frame.permute(1, 2, 0).cpu()
+    heatmap = heatmaps[frame_index].cpu()
+
+    plt.figure(figsize=(12, 12))
+    plt.imshow(rgb_frame)
+    plt.imshow(
+        heatmap,
+        cmap="jet",
+        alpha=alpha,
+        vmin=0,
+        vmax=1,
+    )
+    plt.title(
+        f"Grad-CAM\n"
+        f"Prediction: {class_labels[prediction]} | "
+        f"Truth: {class_labels[label]}",
+        fontsize=16,
+    )
+    plt.axis("off") 
+    plt.tight_layout()
+    plt.show()

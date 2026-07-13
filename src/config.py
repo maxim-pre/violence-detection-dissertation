@@ -36,7 +36,7 @@ DEFAULT_TRAINING_PARAMS_V1 = {
 
 DEFAULT_TRAINING_PARAMS_V2= {
     # general hyperparameters
-    "input_mode": "diff", 
+    "input_mode": "rgb",
     "num_frames": 32,
     "augment": True,
     "batch_size": 4,
@@ -62,11 +62,14 @@ DEFAULT_TRAINING_PARAMS_V2= {
 }
 
 DEFAULT_TRAINING_PARAMS_V3= {
-    # general hyperparameters
-    "input_mode": "diff", 
+
+    #input
     "num_frames": 32,
     "augment": True,
     "batch_size": 4,
+    "input_mode": "diff",
+
+    #optimisation
     "learning_rate": 1e-4,
     "cnn_learning_rate": 1e-5,
     "min_lr": 1e-5,
@@ -75,13 +78,13 @@ DEFAULT_TRAINING_PARAMS_V3= {
     "scheduler_patience": 5,
     "epochs": 75,
     "early_stopping_patience": 15,
-    "weight_decay": 0,
+    "weight_decay": 0.0,
     "amsgrad": False,
     "seed": 42,
 
     # model hyperparameters
     "hidden_channels": 64,
-    "reduced_channels": 64,
+    "reduced_channels": 96,
     "classifier_hidden_size": 128,
     "dropout": 0.35,
     "cnn_cutoff": 19,
