@@ -2,12 +2,18 @@ import torch
 import torch.nn.functional as F
 
 class RISE:
-    def __init__(self, model, num_masks=1000, mask_batch_size=8, temporal_grid_size=8, spatial_grid_size=7):
+    def __init__(self, model, num_masks=1000, mask_batch_size=8, temporal_grid_size=8, spatial_grid_size=7, normalisation_mode="per_frame"):
         self.model = model
         self.num_masks = num_masks
         self.mask_batch_size = mask_batch_size
         self.temporal_grid_size = temporal_grid_size
         self.spatial_grid_size = spatial_grid_size
+        self.mask_probability = 0.5
+        self.normalisation_mode = normalisation_mode
+
+        if self.normalisation_mode not in ["per_frame", "per_video"]:
+            raise ValueError("normalisation_mode must be either 'per_frame' OR 'per_video'")
+
 
     def _generate_masks(self, number_of_masks, num_frames, height, width, device):
         # 1. generate coarse masks 8x7x7
@@ -26,7 +32,7 @@ class RISE:
                 self.spatial_grid_size, 
                 self.spatial_grid_size,
                 device=device
-            ) < 0.5
+            ) < self.mask_probability
         ).float()
 
         # shape [num_masks, 1, 8, 7, 7]
@@ -61,9 +67,9 @@ class RISE:
 
         # now cropping to shape [32, 224, 244]
         for i in range(number_of_masks):
-            temporal_offset = torch.randint(low=0, high=temporal_cell_size, size=(1,), device=device)
-            height_offset = torch.randint(low=0, high=height_cell_size, size=(1,), device=device)
-            width_offset = torch.randint(low=0, high=width_cell_size, size=(1,), device=device)
+            temporal_offset = torch.randint(low=0, high=temporal_cell_size, size=(1,), device=device).item()
+            height_offset = torch.randint(low=0, high=height_cell_size, size=(1,), device=device).item()
+            width_offset = torch.randint(low=0, high=width_cell_size, size=(1,), device=device).item()
 
             masks[i] = enlarged_masks[
                 i,
@@ -75,10 +81,20 @@ class RISE:
         return masks
 
     def _normalise_saliency_map(self, saliency):
-        minimum = saliency.min()
-        maximum = saliency.max()
-
-        return (saliency-minimum)/(maximum-minimum + 1e-8)
+        '''
+            saliency shape: [32, 7, 7] or [batch_size * num_frames, 7, 7] 
+        '''
+        if self.normalisation_mode == "per_frame":
+            saliency_min = saliency.flatten(1).min(dim=1).values.view(-1, 1, 1)
+            saliency_max = saliency.flatten(1).max(dim=1).values.view(-1, 1, 1)
+        elif self.normalisation_mode == "per_video":
+            saliency_min = saliency.min()
+            saliency_max = saliency.max()
+        else:
+            raise ValueError("normalisation_mode must be either 'per_frame' OR 'per_video'")
+        
+        saliency = (saliency - saliency_min) / (saliency_max - saliency_min + 1e-8)
+        return saliency
     
     def generate_heatmap(self, input_tensor, target_class=None):
 
@@ -121,7 +137,8 @@ class RISE:
             masks_processed += current_batch_size
             print(f"processed {masks_processed}/{self.num_masks} masks")
         
-        saliency_map = saliency_accumulator/(0.5 * self.num_masks)
+        saliency_map = saliency_accumulator/(self.mask_probability * self.num_masks)
+        print(f"saliency_map shape: {saliency_map.shape}")
         normalised_saliency_map = self._normalise_saliency_map(saliency_map)
 
         return (

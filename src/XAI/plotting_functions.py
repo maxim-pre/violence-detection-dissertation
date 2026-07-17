@@ -1,4 +1,6 @@
 import matplotlib.pyplot as plt
+import matplotlib.pyplot as plt
+from matplotlib.animation import FuncAnimation
 
 
 def plot_gradcam_over_rgb(heatmaps, rgb_frames, label, prediction, alpha=0.45):
@@ -65,3 +67,86 @@ def plot_single_frame_gradcam(heatmaps, rgb_frames, frame_index, label, predicti
     plt.axis("off") 
     plt.tight_layout()
     plt.show()
+
+
+import matplotlib.pyplot as plt
+from matplotlib.animation import FuncAnimation
+from IPython.display import HTML
+
+
+def animate_saliency_over_rgb(
+    heatmaps,
+    rgb_frames,
+    label,
+    prediction,
+    alpha=0.45,
+    interval=150,
+):
+    """
+    heatmaps: [num_frames, H, W]
+    rgb_frames: [num_frames + 1, 3, H, W]
+    interval: Delay between frames in milliseconds.
+    """
+
+    class_names = {
+        0: "NonFight",
+        1: "Fight",
+    }
+
+    heatmaps = heatmaps.detach().cpu()
+    rgb_frames = rgb_frames.detach().cpu()
+
+    num_frames = heatmaps.shape[0]
+
+    fig, ax = plt.subplots(figsize=(7, 7))
+
+    # Heatmap 0 corresponds to RGB frame 1.
+    first_rgb = rgb_frames[1].permute(1, 2, 0)
+    first_heatmap = heatmaps[0]
+
+    rgb_display = ax.imshow(first_rgb)
+
+    heatmap_display = ax.imshow(
+        first_heatmap,
+        cmap="jet",
+        alpha=alpha,
+        vmin=0,
+        vmax=1,
+    )
+
+    title = ax.set_title(
+        f"Frame 1/{num_frames}\n"
+        f"Prediction: {class_names[prediction]} | "
+        f"Ground Truth: {class_names[label]}"
+    )
+
+    ax.axis("off")
+
+    def update(frame_index):
+        # Use frame_index + 1 because each heatmap explains a frame difference.
+        rgb_frame = rgb_frames[frame_index + 1].permute(1, 2, 0)
+        heatmap = heatmaps[frame_index]
+
+        rgb_display.set_data(rgb_frame)
+        heatmap_display.set_data(heatmap)
+
+        title.set_text(
+            f"Frame {frame_index + 1}/{num_frames}\n"
+            f"Prediction: {class_names[prediction]} | "
+            f"Ground Truth: {class_names[label]}"
+        )
+
+        return rgb_display, heatmap_display, title
+
+    animation = FuncAnimation(
+        fig,
+        update,
+        frames=num_frames,
+        interval=interval,
+        blit=False,
+        repeat=True,
+    )
+
+    plt.close(fig)
+
+    return animation

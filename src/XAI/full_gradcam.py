@@ -3,15 +3,19 @@ import torch.nn.functional as F
 
 
 class FullGradCAM:
-    def __init__(self, model, target_layers):
+    def __init__(self, model, target_layers, normalisation_mode="per_frame"):
         self.model = model
         self.target_layers = target_layers 
+        self.normalisation_mode = normalisation_mode
 
         self.gradients = {}
         self.activations = {}
 
         self.forward_hooks = []
         self.backward_hooks = []
+
+        if self.normalisation_mode not in ["per_frame", "per_video"]:
+            raise ValueError("normalisation_mode must be either 'per_frame' OR 'per_video'")
 
         for i, layer in enumerate(target_layers):
             forward_hook = layer.register_forward_hook(self._make_activation_hook(i))
@@ -40,10 +44,21 @@ class FullGradCAM:
         for hook in self.backward_hooks:
             hook.remove()
     
-    def _normalise_cam(self, cam):
-        cam_min = cam.flatten(1).min(dim=1).values.view(-1,1,1)
-        cam_max = cam.flatten(1).max(dim=1).values.view(-1,1,1)
-        return (cam - cam_min) / (cam_max - cam_min + 1e-8)
+    def _normalise(self, cam):
+        '''
+            cam shape: [32, 7, 7] or [batch_size * num_frames, 7, 7] 
+        '''
+        if self.normalisation_mode == "per_frame":
+            cam_min = cam.flatten(1).min(dim=1).values.view(-1, 1, 1)
+            cam_max = cam.flatten(1).max(dim=1).values.view(-1, 1, 1)
+        elif self.normalisation_mode == "per_video":
+            cam_min = cam.min()
+            cam_max = cam.max()
+        else:
+            raise ValueError("normalisation_mode must be either 'per_frame' OR 'per_video'")
+
+        cam = (cam - cam_min) / (cam_max - cam_min + 1e-8)
+        return cam
 
     def generate_heatmap(self, input_tensor, target_class=None):
         self.model.eval()
@@ -96,10 +111,11 @@ class FullGradCAM:
         
         stacked_cams = torch.stack(layer_cams, dim=0)
 
-        final_cam = stacked_cams.mean(dim=0)
+        final_cam = stacked_cams.mean(dim=0) # [1, 32, 224, 224]
+        print(f"final_cam_shape {final_cam.shape}")
 
         final_cam = final_cam.reshape(B*T,H,W)
-        final_cam = self._normalise_cam(final_cam)
+        final_cam = self._normalise(final_cam)
         final_cam = final_cam.reshape(B,T,H,W)
 
         return final_cam.detach(), logits.detach(), [cam.detach() for cam in layer_cams]
