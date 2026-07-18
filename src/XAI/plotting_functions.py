@@ -2,7 +2,6 @@ import matplotlib.pyplot as plt
 import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
 
-
 def plot_gradcam_over_rgb(heatmaps, rgb_frames, label, prediction, alpha=0.45):
     class_labels = {0: "Non-Violent", 1: "Violent"}
 
@@ -67,12 +66,6 @@ def plot_single_frame_gradcam(heatmaps, rgb_frames, frame_index, label, predicti
     plt.axis("off") 
     plt.tight_layout()
     plt.show()
-
-
-import matplotlib.pyplot as plt
-from matplotlib.animation import FuncAnimation
-from IPython.display import HTML
-
 
 def animate_saliency_over_rgb(
     heatmaps,

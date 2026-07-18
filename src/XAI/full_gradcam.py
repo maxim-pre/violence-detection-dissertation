@@ -61,6 +61,12 @@ class FullGradCAM:
         return cam
 
     def generate_heatmap(self, input_tensor, target_class=None):
+
+        B, T, C, H, W = input_tensor.shape
+        
+        if B != 1:
+            raise ValueError("Batch size must be 1")
+
         self.model.eval()
         self.model.zero_grad(set_to_none=True)
 
@@ -69,50 +75,38 @@ class FullGradCAM:
 
         input_tensor = input_tensor.detach().clone().requires_grad_(True)
         logits = self.model(input_tensor)
-        batch_size = logits.size(dim=0)
 
         if target_class is None:
-            # pick the class with the highest score if no target class is provided
-            target_class = logits.argmax(dim=1)
+            target_class = logits.argmax(dim=1) # pick predicted class
         else:
             raise ValueError("target_class must be None. Code not implemented yet")
 
-        score = logits[
-            torch.arange(batch_size, device=logits.device), 
-            target_class
-        ].sum()
-
+        score = logits[0, target_class]
         score.backward()
 
-        B, T, C, H, W = input_tensor.shape
         layer_cams = []
 
         for layer_index in range(len(self.target_layers)):
             activation = self.activations[layer_index]
             gradient = self.gradients[layer_index]
-            print(f"layer: {layer_index}")
-            print(f"activation_size: {activation.shape}")
-            print(f"gradient_size: {gradient.shape}")
             weights = gradient.mean(dim=(2, 3), keepdim=True)
             layer_cam = (weights * activation).sum(dim=1)
             layer_cam = F.relu(layer_cam)
+            layer_cam = layer_cam.unsqueeze(1)
 
-            feature_H = layer_cam.shape[-2]
-            feature_W = layer_cam.shape[-1]
-            layer_cam = layer_cam.view(B, T, feature_H, feature_W)
             layer_cam = F.interpolate(
-                layer_cam.view(B*T,1,feature_H, feature_W),
+                layer_cam,
                 size=(H,W),
                 mode="bilinear",
                 align_corners=False
             )
+            layer_cam = layer_cam.squeeze(1)
             layer_cam = layer_cam.view(B,T,H,W)
             layer_cams.append(layer_cam)
         
         stacked_cams = torch.stack(layer_cams, dim=0)
 
         final_cam = stacked_cams.mean(dim=0) # [1, 32, 224, 224]
-        print(f"final_cam_shape {final_cam.shape}")
 
         final_cam = final_cam.reshape(B*T,H,W)
         final_cam = self._normalise(final_cam)

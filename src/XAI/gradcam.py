@@ -29,7 +29,7 @@ class GradCAM:
     
     def _normalise(self, cam):
         '''
-            cam shape: [32, 7, 7] or [batch_size * num_frames, 7, 7] 
+            cam shape: [32, 224, 224] or [batch_size * num_frames, 224, 224] 
         '''
         if self.normalisation_mode == "per_frame":
             cam_min = cam.flatten(1).min(dim=1).values.view(-1, 1, 1)
@@ -44,68 +44,55 @@ class GradCAM:
         return cam
         
     def generate_heatmap(self, input_tensor, target_class=None):
-        # input_tensor: [B, num_frames, C, H, W]
+
+        B, T, C, H, W = input_tensor.shape
+
+        if B != 1:
+            raise ValueError("Batch size must be 1")
 
         # put model in eval mode (disable dropout etc..)
         self.model.eval()
-
         self.model.zero_grad(set_to_none=True)
-
         input_tensor = input_tensor.detach().clone().requires_grad_(True)
-
         logits = self.model(input_tensor)
 
-        batch_size = logits.size(dim=0)
 
         if target_class is None:
-            # pick the class with the highest score if no target class is provided
-            target_class = logits.argmax(dim=1)
+            target_class = logits.argmax(dim=1) # pick predicted class
         else:
             raise ValueError("target_class must be None. Code not implemented yet")
         
         
-        # sums the logits for the predicted class across the batchs
-        score = logits[
-            torch.arange(batch_size, device=logits.device), 
-            target_class
-        ].sum()
-
+        score = logits[0, target_class]
         score.backward()
 
-        # activation: [B * num_frames, 1280, 7, 7]
-        # gradient: [B * num_frames, 1280, 7, 7]
+        # activation: [T, 1280, 7, 7]
+        # gradient: [T, 1280, 7, 7]
         activation = self.activations
         gradient = self.gradients
-        print(f"activation_shape: {activation.shape}")
-        print(f"gradient_shape: {gradient.shape}")
 
-
-        # weights: [B * num_frames, 1280, 1, 1]
+        # weights: [T, 1280, 1, 1]
         weights = gradient.mean(dim=(2, 3), keepdim=True)
-        print(f"weights shape: {weights.shape}")
 
-        # cam: [B * num_frames, 7, 7]
+        # cam: [T, 7, 7]
         cam = (weights * activation).sum(dim=1)
-        print(f"cam shape: {cam.shape}")
 
         cam = F.relu(cam)
 
-        # Normalize the CAM to [0, 1]
-        cam = self._normalise(cam)
 
-        B, T, C, H, W = input_tensor.shape
-
-        #convert back to: [B, num_frames, 7, 7]
-        cam = cam.view(B, T, cam.shape[-2], cam.shape[-1])
+        #convert to: [T, 1, 7, 7]
+        cam = cam.unsqueeze(1)
 
         # resize heatmaps to the original input size: [B, num_frames, H, W]
         cam = F.interpolate(
-            cam.view(B * T, 1, cam.shape[-2], cam.shape[-1]),
+            cam,
             size=(H, W),
             mode='bilinear',
             align_corners=False
         )
 
+        cam = cam.squeeze(1)
+        cam = self._normalise(cam)
         cam = cam.view(B, T, H, W)
 
         return cam.detach(), logits.detach()
