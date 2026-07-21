@@ -5,18 +5,15 @@ from scripts.gridsearch_CNNLSTM import grid_search
 
 if __name__ == "__main__":
 
-    experiment_root = CHECKPOINT_DIR / "CNN_LSTM_V3" / "grid_search_3_seedtesting"
+    experiment_root = CHECKPOINT_DIR / "CNN_LSTM_V3" / "grid_search_5_unfreeze_from_15"
 
     search_space = [
-        {"run_name": "seed_42", "seed": 42},
-        {"run_name": "seed_43", "seed": 43},
-        {"run_name": "seed_44", "seed": 44},
-        {"run_name": "seed_42_classifier64", "classifier_hidden_size": 64, "seed": 42},
-        {"run_name": "seed_43_classifier64", "classifier_hidden_size": 64, "seed": 43},
-        {"run_name": "seed_44_classifier64", "classifier_hidden_size": 64, "seed": 44},
-        {"run_name": "seed_42_lr75e5", "learning_rate": 7.5e-5, "seed": 42},
-        {"run_name": "seed_43_lr75e5", "learning_rate": 7.5e-5, "seed": 43},
-        {"run_name": "seed_44_lr75e5", "learning_rate": 7.5e-5, "seed": 44},
+        {"run_name": "TL15_weight_decay_1e4", "use_differential_lr": True, "cnn_unfreeze_from":15, "weight_decay": 1e-4},
+        {"run_name": "TL15_weight_decay_5e5", "use_differential_lr": True, "cnn_unfreeze_from":15, "weight_decay": 5e-5},
+        {"run_name": "TL15_weight_decay_1e5", "use_differential_lr": True, "cnn_unfreeze_from":15, "weight_decay": 1e-5},
+        {"run_name": "TL15_weight_decay_5e6", "use_differential_lr": True, "cnn_unfreeze_from":15, "weight_decay": 5e-6},
+        {"run_name": "TL15_cnn_lr_5e6", "use_differential_lr": True, "cnn_unfreeze_from":15, "cnn_learning_rate": 5e-6},
+        {"run_name": "TL15_cnn_lr_1e6", "use_differential_lr": True, "cnn_unfreeze_from":15, "cnn_learning_rate": 1e-6},
     ]
     
     grid_search(search_space, experiment_root=experiment_root, model_version="3")

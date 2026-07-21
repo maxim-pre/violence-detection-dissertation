@@ -73,6 +73,7 @@ DEFAULT_TRAINING_PARAMS_V3= {
     "learning_rate": 1e-4,
     "cnn_learning_rate": 1e-5,
     "min_lr": 1e-5,
+    "cnn_min_lr": 1e-7,
     "factor": 0.5,
     "use_differential_lr": False,
     "scheduler_patience": 5,

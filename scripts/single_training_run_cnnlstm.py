@@ -6,7 +6,7 @@ from torch.utils.data import DataLoader
 from scripts.common.train_one_epoch import train_one_epoch
 from scripts.common.evaluate import evaluate
 from scripts.common.seed import set_seed, seed_worker
-from scripts.common.optimizer import build_optimizer
+from scripts.common.optimizer import build_optimizer, get_sheduler_min_lr, get_learning_rates
 from src.rwf2000 import RWF2000Dataset
 from src.cnn_lstm_v1 import CNNLSTMV1
 from src.cnn_lstm_v2 import CNNLSTMV2
@@ -83,7 +83,7 @@ def train_single_run(hyperparameters, device, save_dir, run_name, model_version=
         mode="max",
         factor=hyperparameters["factor"],
         patience=hyperparameters["scheduler_patience"],
-        min_lr=hyperparameters["min_lr"]
+        min_lr=get_sheduler_min_lr(optimizer, hyperparameters)
     )
 
     history = {
@@ -106,19 +106,23 @@ def train_single_run(hyperparameters, device, save_dir, run_name, model_version=
         val_loss, val_acc = evaluate(model, val_loader, criterion, device)
 
         scheduler.step(val_acc)
-        current_lr = optimizer.param_groups[0]["lr"]
+        lrs = get_learning_rates(optimizer)
+        main_lr = lrs['head']
+        cnn_lr = lrs['cnn']
+
         
         history["train_loss"].append(train_loss)
         history["train_acc"].append(train_acc)
         history["val_loss"].append(val_loss)    
         history["val_acc"].append(val_acc)
-        history["learning_rate"].append(current_lr)
+        history["learning_rate"].append(main_lr)
 
         print(
             f"Train Acc: {train_acc:.4f} | "
             f"Val Acc: {val_acc:.4f} | "
             f"Val Loss: {val_loss:.4f} | "
-            f"LR: {current_lr:.2e}"
+            f"LR: {main_lr:.2e} | " 
+            f"CNN_LR: {cnn_lr:.2e}" 
         )
 
         if val_acc > best_val_acc:
