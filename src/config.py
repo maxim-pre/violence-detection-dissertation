@@ -13,6 +13,13 @@ DEFAULT_AUGMENTATION_PARAMS = {
     "crop_scale_range": (0.85, 1.0),
 }
 
+DEFAULT_STRONG_AUGMENTATION_PARAMS = {
+    "flip_prob": 0.5,
+    "brightness_range": (0.80, 1.20),
+    "contrast_range": (0.80, 1.20),
+    "crop_scale_range": (0.75, 1.0),
+}
+
 DEFAULT_TRAINING_PARAMS_V1 = {
     # optimizer hyperparameters
     "num_frames": 32,

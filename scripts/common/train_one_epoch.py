@@ -3,8 +3,14 @@ import torch
 import torch.nn as nn
 from tqdm.notebook import tqdm
 
+def freeze_cnn_batchnorm(model):
+    for module in model.cnn.modules():
+        if isinstance(module, nn.BatchNorm2d):
+            module.eval()
+
 def train_one_epoch(model, dataloader, criterion, optimizer, device):
     model.train()
+    freeze_cnn_batchnorm(model)
     running_loss = 0.0
     correct = 0
     total = 0

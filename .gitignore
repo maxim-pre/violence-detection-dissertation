@@ -26,6 +26,7 @@ checkpoints/
 logs/
 outputs/
 runs/
+pose_visualisations
 
 # Data
 data/
