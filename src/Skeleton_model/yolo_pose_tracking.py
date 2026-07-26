@@ -99,6 +99,69 @@ def extract_pose_tracking_data(
 
     return pose_data
 
+def build_pose_dataset(
+    dataset,
+    dataset_root,
+    output_root,
+    model,
+    device,
+    tracker="bytetrack.yaml",
+    imgsz=640,
+    conf=0.25,
+):
+    dataset_root = dataset_root
+    output_root = Path(output_root)
+
+    failed_videos = []
+    processed = 0
+    skipped = 0
+
+    for video_path, label in tqdm(
+        dataset.samples,
+        desc="Extracting pose data",
+    ):
+        video_path = Path(video_path)
+
+        relative_path = video_path.relative_to(dataset_root)
+        output_path = output_root / relative_path.with_suffix(".pt")
+
+        if output_path.exists():
+            skipped += 1
+            continue
+
+        try:
+            extract_pose_tracking_data(
+                video_path=video_path,
+                model=model,
+                output_path=output_path,
+                tracker=tracker,
+                imgsz=imgsz,
+                conf=conf,
+                device=device,
+            )
+
+            processed += 1
+
+        except Exception as error:
+            failed_videos.append(
+                {
+                    "video_path": str(video_path),
+                    "output_path": str(output_path),
+                    "error": repr(error),
+                }
+            )
+
+            tqdm.write(
+                f"Failed: {video_path.name} — {error}"
+            )
+
+    print("\nDataset build complete")
+    print(f"Processed: {processed}")
+    print(f"Skipped existing: {skipped}")
+    print(f"Failed: {len(failed_videos)}")
+
+    return failed_videos
+
 def save_pose_tracking_video(
     input_path,
     output_path,
@@ -151,15 +214,3 @@ def save_multiple_tracked_video(start, stop, model_path, dataset):
     for video_num in range(start, stop):
         save_sinlge_tracked_video(video_num, model_path, dataset)
 
-def build_pose_dataset(dataset, output_root, model):
-
-    for video_path, label in tqdm(dataset.samples):
-
-        relative_path = video_path.relative_to(DATASET_ROOT)
-
-        output_path = (
-            output_root /
-            relative_path.with_suffix(".pt")
-        )
-
-        extract_pose_tracking_data(video_path=video_path, output_path=output_path, model=model)
