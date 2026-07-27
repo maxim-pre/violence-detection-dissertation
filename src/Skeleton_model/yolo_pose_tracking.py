@@ -1,10 +1,10 @@
-from pathlib import Path
 import torch
 import cv2
-from ultralytics import YOLO
+from collections import defaultdict
+from pathlib import Path
 from tqdm import tqdm
 from src.config import DATASET_ROOT
-
+from scripts.common.get_device import get_available_device
 
 def extract_pose_tracking_data(
     video_path,
@@ -162,55 +162,109 @@ def build_pose_dataset(
 
     return failed_videos
 
-def save_pose_tracking_video(
-    input_path,
-    output_path,
-    model_path="yolo26m-pose.pt",
+def pose_data_to_stgcn_tensor(pose_data, num_frames=150, num_keypoints=17, max_people=2):
+    '''
+    convert pose data -> (C, T, V, M)
+
+    where: 
+        C = (normalised_X_coordinate, normalised_Y_coordinate, confidence)
+        T = number of frames
+        V = number of keypoints
+        M = maximum number of tracked people
+    '''
+
+    H, W = pose_data["original_video_shape"]
+
+    # 1. rank each track so we can choose the top two tracks
+    # will rank the tracks by duration * confidence. i.e. (number of frames appeard * average confidence of detected joints)
+
+    track_frame_count = defaultdict(int)
+    track_keypoint_count = defaultdict(int)
+    track_keypoint_confidence_sum = defaultdict(float)
+
+    for frame in pose_data["frames"]:
+        for person in frame["people"]:
+
+            track_id = int(person["track_id"])
+            confidences = person["keypoint_confidence"].float()
+
+            track_frame_count[track_id] += 1
+            track_keypoint_count[track_id] += num_keypoints
+            track_keypoint_confidence_sum[track_id] += confidences.sum().item()
+
+    # compute track score
+    track_scores = {}
+    for track_id in track_frame_count:
+        mean_confidence = track_keypoint_confidence_sum[track_id] / track_keypoint_count[track_id]
+        track_scores[track_id] = track_frame_count[track_id] * mean_confidence
+
+    # select the strongest tracks according to max_people
+    sorted_tracks = sorted(track_scores.items(), key=lambda item: item[1], reverse=True)
+    selected_track_ids = [track_id for track_id, score in sorted_tracks[:max_people]]
+
+    track_to_person_index = {}
+    for person_index, track_id in enumerate(selected_track_ids):
+        track_to_person_index[track_id] = person_index
+
+    # construct the tensor
+    tensor = torch.zeros(3, num_frames, num_keypoints, max_people, dtype=torch.float32)
+
+    for frame in pose_data["frames"]:
+        frame_index = frame["frame_index"]
+        if not 0 <= frame_index < num_frames: continue
+
+        for person in frame["people"]:
+            
+            track_id = person["track_id"]
+            if track_id not in track_to_person_index: continue 
+
+            person_index = track_to_person_index[track_id]
+            keypoints = person["keypoints"]
+            confidences = person["keypoint_confidence"]
+
+            # normalise between 0-1
+            x = keypoints[:, 0] / W
+            y = keypoints[:, 1] / H
+
+            tensor[0, frame_index, :, person_index] = x
+            tensor[1, frame_index, :, person_index] = y
+            tensor[2, frame_index, :, person_index] = confidences
+
+    return tensor
+
+def save_annotated_pose_videos(
+    model,
+    pose_files,
+    dataset_root,
+    split,
     tracker="bytetrack.yaml",
-    device="cuda:2",
 ):
-    input_path = Path(input_path)
-    output_path = Path(output_path)
+    device = str(get_available_device())
+    dataset_root = Path(dataset_root)
 
-    output_path.parent.mkdir(parents=True, exist_ok=True)
+    for pose_path in tqdm(pose_files, desc="Saving annotated videos"):
 
-    model = YOLO(model_path)
+        pose_path = Path(pose_path)
 
-    cap = cv2.VideoCapture(str(input_path))
+        class_name = pose_path.parent.name
+        video_name = pose_path.stem
 
-    fps = cap.get(cv2.CAP_PROP_FPS)
-    width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
-    height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+        video_path = dataset_root / split / class_name / f"{video_name}.avi"
 
-    writer = cv2.VideoWriter(
-        str(output_path),
-        cv2.VideoWriter_fourcc(*"mp4v"),
-        fps,
-        (width, height),
-    )
+        if not video_path.exists():
+            print(f"Missing video: {video_path}")
+            continue
 
-    while True:
-        success, frame = cap.read()
-        if not success:
-            break
-        result = model.track(frame, persist=True, tracker=tracker, device=device, verbose=False,)[0]
+        for _ in model.track(
+            source=str(video_path),
+            tracker=tracker,
+            save=True,
+            stream=True,
+            persist=True,
+            exist_ok=True,
+            verbose=False,
+            device=device,
+        ):
+            pass
 
-        annotated_frame = result.plot()
-        writer.write(annotated_frame)
-
-    cap.release()
-    writer.release()
-
-    print(f"Saved video to {output_path}")
-
-
-def save_sinlge_tracked_video(video_num, model_path, dataset):
-    video_path = dataset.samples[video_num][0]
-    video_path = str(video_path)
-    output_path= f"outputs/video_{video_num}.mp4"
-    save_pose_tracking_video(video_path, output_path, model_path=model_path)
-
-def save_multiple_tracked_video(start, stop, model_path, dataset):
-    for video_num in range(start, stop):
-        save_sinlge_tracked_video(video_num, model_path, dataset)
-
+    print("Finished saving annotated videos.")

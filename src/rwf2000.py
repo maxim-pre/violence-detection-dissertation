@@ -4,6 +4,7 @@ import torch
 from torchvision.transforms import Normalize
 from torch.utils.data import Dataset
 from src.config import DEFAULT_AUGMENTATION_PARAMS
+from src.Skeleton_model.yolo_pose_tracking import pose_data_to_stgcn_tensor
 import numpy as np
 import random
 
@@ -210,3 +211,47 @@ class RWF2000Dataset(Dataset):
         label = torch.tensor(label, dtype=torch.long)
 
         return video, label
+
+class RWF2000PoseDataset(Dataset):
+
+    def __init__(self, root_dir, num_frames=150, num_keypoints=17, max_people=2, split="train"):
+        self.root_dir = root_dir
+        self.num_frames = num_frames
+        self.num_keypoints = num_keypoints
+        self.max_people = max_people
+        self.split = split
+        self.label_map = {
+                "NonFight": 0,
+                "Fight": 1
+            }
+
+        self.samples = self._load_samples()
+
+    def _load_samples(self):
+        samples = []
+
+        for label_name, label_idx in self.label_map.items():
+            folder = self.root_dir / self.split / label_name
+
+            for video_path in folder.glob("*.pt"):
+                samples.append((video_path, label_idx))
+
+        return samples
+
+    def __len__(self):
+        return len(self.samples)
+
+    def __getitem__(self, index):
+        pose_path, label = self.samples[index]
+
+        pose_data = torch.load(pose_path, weights_only=False)
+        tensor = pose_data_to_stgcn_tensor(
+            pose_data=pose_data,
+            num_frames=self.num_frames,
+            num_keypoints=self.num_keypoints,
+            max_people=self.max_people,
+        )
+        label = torch.tensor(label, dtype=torch.long)
+
+        return tensor, label
+        
