@@ -5,6 +5,13 @@ import torch
 Spatial Temporal Graph Convolutional Networks for Skeleton-Based Action Recognition
 Sijie Yan, Yuanjun Xiong, Dahua Lin
 
+@inproceedings{stgcn2018aaai,
+  title     = {Spatial Temporal Graph Convolutional Networks for Skeleton-Based Action Recognition},
+  author    = {Sijie Yan and Yuanjun Xiong and Dahua Lin},
+  booktitle = {AAAI},
+  year      = {2018},
+}
+
 '''
 
 def compute_joint_distance_to_center_of_gravity(dataset):
@@ -40,12 +47,14 @@ def compute_joint_distance_to_center_of_gravity(dataset):
 
 
 class SkeletonGraph:
-    def __init__(self, radii):
+    def __init__(self, radii, normalisation="column"):
         '''
         radii: at index i = average distance of joint i from the center of gravity
         '''
         self.radii = torch.tensor(radii, dtype=torch.float32)
         self.num_joints = 17
+        self.normalisation = normalisation
+        
         # Skeleton edges taken directly from ultralytics
         self.skeleton = [
             [15, 13],
@@ -71,20 +80,36 @@ class SkeletonGraph:
 
         self.A = self._build_adjacency_matrix_with_spatial_partitioning()
 
-    def _normalise_adjacency_matrix(self, adjacency_matrix, alpha=0.001):
+    def _symmetric_normalise_adjacency_matrix(self, adjacency_matrix):
         '''
-        A_hat = D_j^(-1/2) @ A_j @ D_j^(-1/2)
-        D_j[i, i] = sum_k A_j[i, k] + alpha
-            where:
-                A_j is one partition of the graph (root, centripetal, centrifugal)
-                D is the degree matrix constructed from A
+        A_hat = D^(-1/2) @ A @ D^(-1/2)
+
+        paper states symmetric normalisation while released implementation uses column normalisation
         '''
 
-        degree = adjacency_matrix.sum(dim=1) + alpha # counts connections of joints (len 17)
-        inverse_sqrt_degree = degree.pow(-0.5)
+        degree = adjacency_matrix.sum(dim=1)
+        inverse_sqrt_degree = torch.zeros_like(degree)
+        non_zero = degree > 0
+        inverse_sqrt_degree[non_zero] = degree[non_zero].pow(-0.5)
         degree_matrix = torch.diag(inverse_sqrt_degree)
 
         return degree_matrix @ adjacency_matrix @ degree_matrix
+
+    def _column_normalise_adjacency_matrix(self, adjacency_matrix):
+        degree = adjacency_matrix.sum(dim=0)
+        inverse_degree = torch.zeros_like(degree)
+        non_zero = degree > 0 
+        inverse_degree[non_zero] = 1 / degree[non_zero]
+        degree_matrix = torch.diag(inverse_degree)
+        return adjacency_matrix @ degree_matrix
+
+    def _normalise_adjacency_matrix(self, adjacency_matrix):
+        if self.normalisation == "column":
+            return self._column_normalise_adjacency_matrix(adjacency_matrix)
+        elif self.normalisation == "symmetric":
+            return self._symmetric_normalise_adjacency_matrix(adjacency_matrix)
+        else:
+            raise ValueError("normalisation must be column or symmetric")
 
     def _build_adjacency_matrix_with_spatial_partitioning(self):
         '''
@@ -98,7 +123,7 @@ class SkeletonGraph:
         centripetal = torch.zeros(self.num_joints, self.num_joints)
         centrifugal = torch.zeros(self.num_joints, self.num_joints)
 
-        root.fill_diagonal_(1) # every joint is connected to itself
+        root.fill_diagonal_(1) # every joint is connected to itself (self-connections)
 
         for joint_i, joint_j in self.skeleton:
             ri = self.radii[joint_i]
@@ -111,16 +136,32 @@ class SkeletonGraph:
             elif rj > ri:
                 centrifugal[joint_i, joint_j] = 1
                 centripetal[joint_j, joint_i] = 1
+            else:
+                root[joint_i, joint_j] = 1
+                root[joint_j, joint_i] = 1
 
-        self.unormalised_root = root
-        self.unormalised_centripetal = centripetal
-        self.unormalised_centrifugal = centrifugal
 
-        root = self._normalise_adjacency_matrix(root)
-        centripetal = self._normalise_adjacency_matrix(centripetal)
-        centrifugal = self._normalise_adjacency_matrix(centrifugal)
+        full_adjacency = root + centripetal + centrifugal
+        normalised_full_adjacency = self._normalise_adjacency_matrix(full_adjacency)
 
-        return torch.stack([root, centripetal, centrifugal], dim=0)
+        normalised_root = root * normalised_full_adjacency
+        normalised_centripetal = centripetal * normalised_full_adjacency
+        normalised_centrifugal = centrifugal * normalised_full_adjacency
+
+        # for debugging and stuff
+        self.root = root 
+        self.centripetal = centripetal
+        self.centrifugal = centrifugal
+        self.normalised_root = normalised_root
+        self.normalised_centripetal = normalised_centripetal
+        self.normalised_centrifugal = normalised_centrifugal
+        self.normalised_full_adjacency = normalised_full_adjacency
+        self.full_adjacency = full_adjacency
+
+
+        return torch.stack([normalised_root, normalised_centripetal, normalised_centrifugal], dim=0)
+        
+
 
 
 
