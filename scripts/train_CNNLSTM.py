@@ -1,6 +1,6 @@
 import torch 
 from scripts.single_training_run_cnnlstm import train_single_run
-from src.config import CHECKPOINT_DIR, DEFAULT_TRAINING_PARAMS_V1, DEFAULT_TRAINING_PARAMS_V2
+from src.config import CHECKPOINT_DIR, DEFAULT_TRAINING_PARAMS_V1, DEFAULT_TRAINING_PARAMS_V2, DEFAULT_TRAINING_PARAMS_V3
 
 if __name__ == "__main__":
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
@@ -20,10 +20,10 @@ if __name__ == "__main__":
     
     elif model_version == "2":
 
-        run_name = "test_frame_differences"
-        save_dir = CHECKPOINT_DIR / "CNN_LSTM_V2" / run_name
-        params = {"input_mode": "diff"}
-        hyperparameters = DEFAULT_TRAINING_PARAMS_V2.copy()
+        run_name = "test"
+        save_dir = CHECKPOINT_DIR / "CNN_LSTM_V3" / run_name
+        params = {}
+        hyperparameters = DEFAULT_TRAINING_PARAMS_V3.copy()
         hyperparameters.update(params)
 
         train_single_run(hyperparameters, device, save_dir, run_name, model_version=model_version)
