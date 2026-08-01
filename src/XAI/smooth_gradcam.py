@@ -98,8 +98,6 @@ class SmoothGradCAM:
         if target_class is None:
             # pick the class with the highest score if no target class is provided
             target_class = logits.argmax(dim=1).item()
-        else:
-            raise ValueError("target_class must be None. Code not implemented yet")
         
         cam_accumulator = None 
 

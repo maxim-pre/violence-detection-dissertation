@@ -78,8 +78,6 @@ class FullGradCAM:
 
         if target_class is None:
             target_class = logits.argmax(dim=1) # pick predicted class
-        else:
-            raise ValueError("target_class must be None. Code not implemented yet")
 
         score = logits[0, target_class]
         score.backward()
