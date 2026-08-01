@@ -52,7 +52,7 @@ def train_model(
     optimizer = build_optimizer(model, hyperparameters)
     scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
         optimizer, 
-        mode="max", 
+        mode="min", 
         factor=hyperparameters["factor"],
         patience=hyperparameters["scheduler_patience"], 
         min_lr=hyperparameters["min_lr"],
@@ -76,7 +76,7 @@ def train_model(
         train_loss, train_acc = train_one_epoch(model, train_loader, criterion, optimizer, device)
         val_loss, val_acc = eval_one_epoch(model, val_loader, criterion, device)
 
-        scheduler.step(val_acc)
+        scheduler.step(val_loss)
         current_lr = optimizer.param_groups[0]["lr"]
 
         history["train_loss"].append(train_loss)

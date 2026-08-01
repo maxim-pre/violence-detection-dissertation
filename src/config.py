@@ -104,25 +104,22 @@ DEFAULT_STGCN_PARAMS_V1 = {
     "seed": 42, 
 
     # input
-    "max_people": 2, 
+    "max_people": 3, 
     "batch_size": 4, 
 
     # optimisation
     "epochs": 80,
-    "learning_rate": 1e-4, 
-    "min_lr": 1e-5, 
-    "scheduler_patience": 5, 
+    "learning_rate": 2e-4, 
+    "min_lr": 1e-6, 
+    "scheduler_patience": 10, 
     "factor": 0.5, 
     "early_stopping_patience": 15,
     "amsgrad": False, 
-    "weight_decay": 0.0, 
+    "weight_decay": 1e-4, 
 
     # model
     "adjacency_normalisation_mode": "column", 
     "temporal_kernel_size": 9, 
-    "dropout": 0.5, 
+    "dropout": 0.3, 
     "edge_importance_weighting": True
-
-
-
 }
