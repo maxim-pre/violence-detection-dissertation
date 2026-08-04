@@ -164,7 +164,7 @@ def build_pose_dataset(
 
 def pose_data_to_stgcn_tensor(pose_data, num_frames=150, num_keypoints=17, max_people=2):
     '''
-    convert pose data -> (C, T, V, M)
+    convert pose data -> (3, T, V, M)
 
     where: 
         C = (normalised_X_coordinate, normalised_Y_coordinate, confidence)

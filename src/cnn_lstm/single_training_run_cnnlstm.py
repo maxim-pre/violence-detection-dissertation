@@ -3,13 +3,13 @@ import gc
 import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader
-from scripts.common.train_one_epoch import train_one_epoch
-from scripts.common.evaluate import evaluate
+from src.cnn_lstm.train_one_epoch import train_one_epoch
+from src.cnn_lstm.evaluate import evaluate
 from scripts.common.seed import set_seed, seed_worker
 from scripts.common.optimizer import build_optimizer, get_sheduler_min_lr, get_learning_rates
 from src.rwf2000 import RWF2000Dataset
-from src.cnn_lstm_v1 import CNNLSTMV1
-from src.cnn_lstm_v2 import CNNLSTMV2
+from src.cnn_lstm.cnn_lstm_v1 import CNNLSTMV1
+from src.cnn_lstm.cnn_lstm_v2 import CNNLSTMV2
 from src.config import DATASET_ROOT, DEFAULT_AUGMENTATION_PARAMS
 import json
 
@@ -74,13 +74,13 @@ def train_single_run(hyperparameters, device, save_dir, run_name, model_version=
         generator=generator
     )
 
-    criterion = nn.CrossEntropyLoss()
+    criterion = nn.CrossEntropyLoss(label_smoothing=hyperparameters["label_smoothing"])
 
     optimizer = build_optimizer(model, hyperparameters)
 
     scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
         optimizer,
-        mode="max",
+        mode="min",
         factor=hyperparameters["factor"],
         patience=hyperparameters["scheduler_patience"],
         min_lr=get_sheduler_min_lr(optimizer, hyperparameters)
@@ -102,10 +102,10 @@ def train_single_run(hyperparameters, device, save_dir, run_name, model_version=
         print(f"\n{run_name} | Epoch {epoch+1}/{hyperparameters['epochs']}")
         print("-" * 50)
 
-        train_loss, train_acc = train_one_epoch(model, train_loader, criterion, optimizer, device)
+        train_loss, train_acc = train_one_epoch(model, train_loader, criterion, optimizer, device, hyperparameters)
         val_loss, val_acc = evaluate(model, val_loader, criterion, device)
 
-        scheduler.step(val_acc)
+        scheduler.step(val_loss)
         lrs = get_learning_rates(optimizer)
         main_lr = lrs['head']
         cnn_lr = lrs['cnn']

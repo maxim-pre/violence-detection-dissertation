@@ -1,6 +1,6 @@
 import torch
 from src.config import CHECKPOINT_DIR
-from scripts.gridsearch_CNNLSTM import grid_search
+from src.cnn_lstm.gridsearch_CNNLSTM import grid_search
 
 
 if __name__ == "__main__":

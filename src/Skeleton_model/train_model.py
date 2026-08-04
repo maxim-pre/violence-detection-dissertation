@@ -48,7 +48,7 @@ def train_model(
         generator=generator
     )
 
-    criterion = nn.CrossEntropyLoss()
+    criterion = nn.CrossEntropyLoss(label_smoothing=hyperparameters["label_smoothing"])
     optimizer = build_optimizer(model, hyperparameters)
     scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
         optimizer, 

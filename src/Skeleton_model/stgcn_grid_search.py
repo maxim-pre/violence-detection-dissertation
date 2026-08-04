@@ -24,6 +24,7 @@ def grid_search(search_space, experiment_root=None):
 
         params = params.copy()
         run_name = params.pop("run_name", f"run_{run_id}")
+        augmentation_params = params.pop("augmentation_params", None)
 
         print(f"\nStarting run {run_id}/{len(search_space)}")
         print(params)
@@ -37,9 +38,10 @@ def grid_search(search_space, experiment_root=None):
         set_seed(hyperparameters["seed"])
         device = get_available_device()
 
-        train_dataset = RWF2000PoseDataset(POSE_DATASET_ROOT, split="train", max_people=hyperparameters["max_people"])
+        radii_dataset = RWF2000PoseDataset(POSE_DATASET_ROOT, split="train", max_people=hyperparameters["max_people"])
+        train_dataset = RWF2000PoseDataset(POSE_DATASET_ROOT, split="train", max_people=hyperparameters["max_people"], augment=hyperparameters["augment"], augment_params=augmentation_params)
         val_dataset = RWF2000PoseDataset(POSE_DATASET_ROOT, split="val", max_people=hyperparameters["max_people"])
-        radii = compute_joint_distance_to_center_of_gravity(train_dataset)
+        radii = compute_joint_distance_to_center_of_gravity(radii_dataset)
         skeleton_graph = SkeletonGraph(radii, normalisation=hyperparameters["adjacency_normalisation_mode"])
         model = STGCN(skeleton_graph.A, temporal_kernel_size=hyperparameters["temporal_kernel_size"], dropout=hyperparameters["dropout"], edge_importance_weighting=hyperparameters["edge_importance_weighting"]).to(device)
 

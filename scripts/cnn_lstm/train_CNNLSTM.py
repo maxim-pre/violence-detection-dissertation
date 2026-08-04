@@ -1,5 +1,5 @@
 import torch 
-from scripts.single_training_run_cnnlstm import train_single_run
+from src.cnn_lstm.single_training_run_cnnlstm import train_single_run
 from src.config import CHECKPOINT_DIR, DEFAULT_TRAINING_PARAMS_V1, DEFAULT_TRAINING_PARAMS_V2, DEFAULT_TRAINING_PARAMS_V3
 
 if __name__ == "__main__":

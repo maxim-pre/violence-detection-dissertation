@@ -7,10 +7,15 @@ def freeze_cnn_batchnorm(model):
     for module in model.cnn.modules():
         if isinstance(module, nn.BatchNorm2d):
             module.eval()
+            for parameter in module.parameters():
+                parameter.requires_grad = False
 
-def train_one_epoch(model, dataloader, criterion, optimizer, device):
+def train_one_epoch(model, dataloader, criterion, optimizer, device, hyperparameters):
     model.train()
-    freeze_cnn_batchnorm(model)
+    
+    if hyperparameters["freeze_cnn_batchnorm"]:
+        freeze_cnn_batchnorm(model)
+
     running_loss = 0.0
     correct = 0
     total = 0

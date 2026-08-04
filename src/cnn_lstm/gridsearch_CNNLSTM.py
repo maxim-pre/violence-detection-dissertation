@@ -1,7 +1,7 @@
 import torch
 import pandas as pd
 import gc
-from scripts.single_training_run_cnnlstm import train_single_run
+from src.cnn_lstm.single_training_run_cnnlstm import train_single_run
 from src.config import DEFAULT_TRAINING_PARAMS_V1, DEFAULT_TRAINING_PARAMS_V2, DEFAULT_TRAINING_PARAMS_V3
 from scripts.common.get_device import get_available_device
 

@@ -3,8 +3,9 @@ import cv2
 import torch
 from torchvision.transforms import Normalize
 from torch.utils.data import Dataset
-from src.config import DEFAULT_AUGMENTATION_PARAMS
+from src.config import DEFAULT_AUGMENTATION_PARAMS, DEFAULT_POSE_AUGMENTATION_PARAMS
 from src.Skeleton_model.yolo_pose_tracking import pose_data_to_stgcn_tensor
+import math
 import numpy as np
 import random
 
@@ -214,12 +215,14 @@ class RWF2000Dataset(Dataset):
 
 class RWF2000PoseDataset(Dataset):
 
-    def __init__(self, root_dir, num_frames=150, num_keypoints=17, max_people=2, split="train"):
+    def __init__(self, root_dir, num_frames=150, num_keypoints=17, max_people=2, split="train", augment=False, augment_params=DEFAULT_POSE_AUGMENTATION_PARAMS):
         self.root_dir = root_dir
         self.num_frames = num_frames
         self.num_keypoints = num_keypoints
         self.max_people = max_people
         self.split = split
+        self.augment = augment
+        self.augment_params = augment_params
         self.label_map = {
                 "NonFight": 0,
                 "Fight": 1
@@ -241,6 +244,15 @@ class RWF2000PoseDataset(Dataset):
     def __len__(self):
         return len(self.samples)
 
+    def _augment_pose(self, tensor):
+        """
+        tensor shape: [3, T, V, M]
+        channels: x, y, confidence
+        """
+        tensor = tensor.clone()
+
+        return tensor
+
     def __getitem__(self, index):
         pose_path, label = self.samples[index]
 
@@ -251,6 +263,10 @@ class RWF2000PoseDataset(Dataset):
             num_keypoints=self.num_keypoints,
             max_people=self.max_people,
         )
+
+        if self.augment:
+            tensor = self._augment_pose(tensor)
+
         label = torch.tensor(label, dtype=torch.long)
 
         return tensor, label

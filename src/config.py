@@ -70,6 +70,7 @@ DEFAULT_TRAINING_PARAMS_V2= {
 }
 
 DEFAULT_TRAINING_PARAMS_V3= {
+    "seed": 42,
 
     #input
     "num_frames": 32,
@@ -79,17 +80,17 @@ DEFAULT_TRAINING_PARAMS_V3= {
 
     #optimisation
     "learning_rate": 1e-4,
-    "cnn_learning_rate": 1e-5,
+    "cnn_learning_rate": 1e-6,
     "min_lr": 1e-5,
     "cnn_min_lr": 1e-7,
     "factor": 0.5,
-    "use_differential_lr": False,
+    "use_differential_lr": True,
     "scheduler_patience": 5,
     "epochs": 75,
     "early_stopping_patience": 15,
     "weight_decay": 0.0,
     "amsgrad": False,
-    "seed": 42,
+    "label_smoothing": 0.0,
 
     # model hyperparameters
     "hidden_channels": 64,
@@ -97,15 +98,17 @@ DEFAULT_TRAINING_PARAMS_V3= {
     "classifier_hidden_size": 128,
     "dropout": 0.35,
     "cnn_cutoff": 19,
-    "cnn_unfreeze_from": None,
+    "cnn_unfreeze_from": 15,
+    "freeze_cnn_batchnorm": False,
 }
 
 DEFAULT_STGCN_PARAMS_V1 = {
     "seed": 42, 
 
     # input
-    "max_people": 3, 
+    "max_people": 4, 
     "batch_size": 4, 
+    "augment": False,
 
     # optimisation
     "epochs": 80,
@@ -116,10 +119,25 @@ DEFAULT_STGCN_PARAMS_V1 = {
     "early_stopping_patience": 15,
     "amsgrad": False, 
     "weight_decay": 1e-4, 
+    "label_smoothing": 0.0,
 
     # model
     "adjacency_normalisation_mode": "column", 
     "temporal_kernel_size": 9, 
     "dropout": 0.3, 
     "edge_importance_weighting": True
+}
+
+DEFAULT_POSE_AUGMENTATION_PARAMS = {
+    "rotation": 5.0,       # samples angle from -5° to +5°
+    "scale": 0.05,         # samples scale from 0.95 to 1.05
+    "translation": 0.03,   # samples x/y shift from -0.03 to +0.03
+    "noise_std": 0.005,
+}
+
+DEFAULT_STRONG_POSE_AUGMENTATION_PARAMS = {
+    "rotation": 10.0,
+    "scale": 0.10,
+    "translation": 0.05,
+    "noise_std": 0.01,
 }
