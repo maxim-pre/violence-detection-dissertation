@@ -108,6 +108,8 @@ DEFAULT_STGCN_PARAMS_V1 = {
     # input
     "max_people": 4, 
     "batch_size": 4, 
+
+    # augmentation
     "augment": False,
 
     # optimisation
@@ -129,15 +131,11 @@ DEFAULT_STGCN_PARAMS_V1 = {
 }
 
 DEFAULT_POSE_AUGMENTATION_PARAMS = {
-    "rotation": 5.0,       # samples angle from -5° to +5°
-    "scale": 0.05,         # samples scale from 0.95 to 1.05
-    "translation": 0.03,   # samples x/y shift from -0.03 to +0.03
-    "noise_std": 0.005,
-}
+    "whole_occlusion_min_frames": 10,
+    "whole_occlusion_max_frames": 25,
+    "whole_occlusion_probability": 0.5,
 
-DEFAULT_STRONG_POSE_AUGMENTATION_PARAMS = {
-    "rotation": 10.0,
-    "scale": 0.10,
-    "translation": 0.05,
-    "noise_std": 0.01,
+    "mirror_min_frames": 1,
+    "mirror_max_frames": 4,
+    "mirror_probability": 0.5,
 }

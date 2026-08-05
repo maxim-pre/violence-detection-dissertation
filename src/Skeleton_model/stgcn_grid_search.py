@@ -1,13 +1,15 @@
 import torch
 import pandas as pd
 import gc
+import json
 from src.Skeleton_model.stgcn import STGCN
 from scripts.common.seed import set_seed
-from src.config import DEFAULT_STGCN_PARAMS_V1, POSE_DATASET_ROOT
+from src.config import DEFAULT_STGCN_PARAMS_V1, POSE_DATASET_ROOT, DEFAULT_POSE_AUGMENTATION_PARAMS
 from scripts.common.get_device import get_available_device
 from src.rwf2000 import RWF2000PoseDataset
 from src.Skeleton_model.graph import SkeletonGraph, compute_joint_distance_to_center_of_gravity
 from src.Skeleton_model.train_model import train_model
+
 
 
 
@@ -24,13 +26,20 @@ def grid_search(search_space, experiment_root=None):
 
         params = params.copy()
         run_name = params.pop("run_name", f"run_{run_id}")
-        augmentation_params = params.pop("augmentation_params", None)
+
+        augmentation_params = params.pop("augmentation_params", {})
+        aug_params = DEFAULT_POSE_AUGMENTATION_PARAMS.copy()
+        aug_params.update(augmentation_params)
+        augmentation_params = aug_params
 
         print(f"\nStarting run {run_id}/{len(search_space)}")
         print(params)
 
         save_dir = experiment_root / run_name
         save_dir.mkdir(parents=True, exist_ok=True)
+
+        with open(save_dir / "augmentation_config.json", "w") as f:
+            json.dump(augmentation_params, f, indent=4)
 
         hyperparameters = DEFAULT_STGCN_PARAMS_V1.copy()
         hyperparameters.update(params)

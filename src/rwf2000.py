@@ -8,6 +8,7 @@ from src.Skeleton_model.yolo_pose_tracking import pose_data_to_stgcn_tensor
 import math
 import numpy as np
 import random
+import skelbumentations as S
 
 
 class RWF2000Dataset(Dataset):
@@ -230,6 +231,30 @@ class RWF2000PoseDataset(Dataset):
 
         self.samples = self._load_samples()
 
+        self.opposite_coco_points = [
+            [5, 6],  # left shoulder, right shoulder
+            [7, 8],  # left elbow, right elbow
+            [9, 10], # left wrist, right wrist
+            [11, 12], # left hip, right hip
+            [13, 14], # left knee, right knee
+            [15, 16], # left ankle, right ankle
+        ]
+
+        self.augmentation_pipeline = S.Compose([
+            S.SelectRandomFrames(
+                [S.WholeOcclusion()], 
+                min_num=self.augment_params["whole_occlusion_min_frames"], 
+                max_num=self.augment_params["whole_occlusion_max_frames"], 
+                p=self.augment_params["whole_occlusion_probability"], 
+            ), 
+            S.SelectRandomFrames(
+                [S.MirrorPerturbation(self.opposite_coco_points)], 
+                min_num=self.augment_params["mirror_min_frames"], 
+                max_num=self.augment_params["mirror_max_frames"], 
+                p=self.augment_params["mirror_probability"],
+            )
+        ])
+
     def _load_samples(self):
         samples = []
 
@@ -249,7 +274,26 @@ class RWF2000PoseDataset(Dataset):
         tensor shape: [3, T, V, M]
         channels: x, y, confidence
         """
+
         tensor = tensor.clone()
+        C, T, V, M = tensor.shape
+
+        for person_index in range(M):
+            person_pose = tensor[:, :, :, person_index] # [3, T, V]
+
+            if person_pose[2].sum() == 0: # continue if no person exists
+                continue
+
+            # pose sequence has to be numpy array with format (T, V, C)
+            keypoints = person_pose.permute(1, 2, 0).cpu().numpy().copy()
+
+            # Skelbumentations expects a mask indicating joints that are already missing
+            # confidence 0 means keypoint was already missing 
+            invalid = (person_pose[2] == 0).cpu().numpy().copy()
+            augmented = self.augmentation_pipeline(keypoints=keypoints, invalid=invalid)
+
+            augmented_person_pose = torch.from_numpy(augmented["keypoints"]).permute(2, 0, 1)
+            tensor[:, :, :, person_index] = augmented_person_pose
 
         return tensor
 
