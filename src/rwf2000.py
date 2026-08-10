@@ -71,9 +71,17 @@ class RWF2000Dataset(Dataset):
                 "crop_scale": 1.0,
                 "crop_x": 0.0,
                 "crop_y": 0.0,
+                "guassian_blur": False,
+                "guassian_blur_sigma": 0.0,
             }
 
         crop_scale = random.uniform(self.augmentation_params["crop_scale_range"][0], self.augmentation_params["crop_scale_range"][1])
+        gaussian_blur = random.random() < self.augmentation_params["gaussian_blur_prob"]
+
+        if gaussian_blur:
+            gaussian_blur_sigma = random.uniform(self.augmentation_params["gaussian_blur_sigma_range"][0], self.augmentation_params["gaussian_blur_sigma_range"][1])
+        else:
+            gaussian_blur_sigma = 0.0
 
         return {
             "flip": random.random() < self.augmentation_params["flip_prob"],
@@ -82,6 +90,8 @@ class RWF2000Dataset(Dataset):
             "crop_scale": crop_scale,
             "crop_x": random.uniform(0.0, 1.0),
             "crop_y": random.uniform(0.0, 1.0),
+            "gaussian_blur": gaussian_blur,
+            "gaussian_blur_sigma": gaussian_blur_sigma,
         }
 
     def _apply_augmentation(self, frame, aug):
@@ -109,6 +119,9 @@ class RWF2000Dataset(Dataset):
         # Horizontal flip
         if aug["flip"]:
             frame = cv2.flip(frame, 1)
+
+        if aug["gaussian_blur"]:
+            frame = cv2.GaussianBlur(frame, (5, 5), sigmaX=aug["gaussian_blur_sigma"], sigmaY=aug["gaussian_blur_sigma"])
 
         # Brightness + contrast
         frame = frame.astype(np.float32)

@@ -1,10 +1,12 @@
 import torch
 import cv2
+import numpy as np
 from collections import defaultdict
 from pathlib import Path
 from tqdm import tqdm
 from src.config import DATASET_ROOT
 from scripts.common.get_device import get_available_device
+
 
 def extract_pose_tracking_data(
     video_path,

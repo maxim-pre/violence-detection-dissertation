@@ -13,11 +13,12 @@ from src.cnn_lstm.cnn_lstm_v2 import CNNLSTMV2
 from src.config import DATASET_ROOT, DEFAULT_AUGMENTATION_PARAMS
 import json
 
-def train_single_run(hyperparameters, device, save_dir, run_name, model_version="2", augmentation_params=None):
+def train_single_run(hyperparameters, device, save_dir, run_name, model_version="2"):
     set_seed(hyperparameters["seed"])
     save_dir.mkdir(parents=True, exist_ok=True)
 
     augmentation_config = DEFAULT_AUGMENTATION_PARAMS.copy()
+    augmentation_params = hyperparameters.pop("augmentation_params", None)
 
     if augmentation_params is not None:
         augmentation_config.update(augmentation_params)

@@ -4,7 +4,7 @@ import gc
 import json
 from src.Skeleton_model.stgcn import STGCN
 from scripts.common.seed import set_seed
-from src.config import DEFAULT_STGCN_PARAMS_V1, POSE_DATASET_ROOT, DEFAULT_POSE_AUGMENTATION_PARAMS
+from src.config import DEFAULT_STGCN_PARAMS_V1, POSE_DATASET_ROOT, DEFAULT_POSE_AUGMENTATION_PARAMS, GAMMA_POSE_DATASET_ROOT
 from scripts.common.get_device import get_available_device
 from src.rwf2000 import RWF2000PoseDataset
 from src.Skeleton_model.graph import SkeletonGraph, compute_joint_distance_to_center_of_gravity
@@ -47,9 +47,15 @@ def grid_search(search_space, experiment_root=None):
         set_seed(hyperparameters["seed"])
         device = get_available_device()
 
-        radii_dataset = RWF2000PoseDataset(POSE_DATASET_ROOT, split="train", max_people=hyperparameters["max_people"])
-        train_dataset = RWF2000PoseDataset(POSE_DATASET_ROOT, split="train", max_people=hyperparameters["max_people"], augment=hyperparameters["augment"], augment_params=augmentation_params)
-        val_dataset = RWF2000PoseDataset(POSE_DATASET_ROOT, split="val", max_people=hyperparameters["max_people"])
+        if hyperparameters["use_gamma_corrected_data"]:
+            dataset_root = GAMMA_POSE_DATASET_ROOT
+        else:
+            dataset_root = POSE_DATASET_ROOT
+            
+
+        radii_dataset = RWF2000PoseDataset(dataset_root, split="train", max_people=hyperparameters["max_people"])
+        train_dataset = RWF2000PoseDataset(dataset_root, split="train", max_people=hyperparameters["max_people"], augment=hyperparameters["augment"], augment_params=augmentation_params)
+        val_dataset = RWF2000PoseDataset(dataset_root, split="val", max_people=hyperparameters["max_people"])
         radii = compute_joint_distance_to_center_of_gravity(radii_dataset)
         skeleton_graph = SkeletonGraph(radii, normalisation=hyperparameters["adjacency_normalisation_mode"])
         model = STGCN(skeleton_graph.A, temporal_kernel_size=hyperparameters["temporal_kernel_size"], dropout=hyperparameters["dropout"], edge_importance_weighting=hyperparameters["edge_importance_weighting"]).to(device)

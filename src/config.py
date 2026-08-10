@@ -4,7 +4,9 @@ from pathlib import Path
 # paths
 PROJECT_ROOT = Path("/homes/mp2940/violence-detection-dissertation")
 DATASET_ROOT = Path("/homes/mp2940/demo/datasets/rwf-2000/RWF-2000")
+GAMMA_DATASET_ROOT = Path("/homes/mp2940/demo/datasets/rwf-2000/RWF-2000-gamma-067")
 POSE_DATASET_ROOT = Path("/homes/mp2940/demo/datasets/rwf-2000/pose_data")
+GAMMA_POSE_DATASET_ROOT = Path("/homes/mp2940/demo/datasets/rwf-2000/pose_data_gamma_067")
 CHECKPOINT_DIR = Path("/homes/mp2940/violence-detection-dissertation/checkpoints")
 
 DEFAULT_AUGMENTATION_PARAMS = {
@@ -12,6 +14,8 @@ DEFAULT_AUGMENTATION_PARAMS = {
     "brightness_range": (0.85, 1.15),
     "contrast_range": (0.85, 1.15),
     "crop_scale_range": (0.85, 1.0),
+    "gaussian_blur_prob": 0.1,
+    "gaussian_blur_sigma_range": (0.1, 1.0),
 }
 
 DEFAULT_STRONG_AUGMENTATION_PARAMS = {
@@ -19,6 +23,8 @@ DEFAULT_STRONG_AUGMENTATION_PARAMS = {
     "brightness_range": (0.80, 1.20),
     "contrast_range": (0.80, 1.20),
     "crop_scale_range": (0.75, 1.0),
+    "gaussian_blur_prob": 0.1,
+    "gaussian_blur_sigma_range": (0.1, 1.5),
 }
 
 DEFAULT_TRAINING_PARAMS_V1 = {
@@ -88,9 +94,9 @@ DEFAULT_TRAINING_PARAMS_V3= {
     "scheduler_patience": 5,
     "epochs": 75,
     "early_stopping_patience": 15,
-    "weight_decay": 0.0,
+    "weight_decay": 5e-6,
     "amsgrad": False,
-    "label_smoothing": 0.0,
+    "label_smoothing": 0.1,
 
     # model hyperparameters
     "hidden_channels": 64,
@@ -99,18 +105,22 @@ DEFAULT_TRAINING_PARAMS_V3= {
     "dropout": 0.35,
     "cnn_cutoff": 19,
     "cnn_unfreeze_from": 15,
-    "freeze_cnn_batchnorm": False,
+    "freeze_cnn_batchnorm": True,
+
+    "augmentation_params": DEFAULT_STRONG_AUGMENTATION_PARAMS, 
 }
 
 DEFAULT_STGCN_PARAMS_V1 = {
     "seed": 42, 
 
     # input
+    "use_gamma_corrected_data": True, 
     "max_people": 4, 
     "batch_size": 4, 
 
+
     # augmentation
-    "augment": False,
+    "augment": True,
 
     # optimisation
     "epochs": 80,
@@ -133,9 +143,9 @@ DEFAULT_STGCN_PARAMS_V1 = {
 DEFAULT_POSE_AUGMENTATION_PARAMS = {
     "whole_occlusion_min_frames": 10,
     "whole_occlusion_max_frames": 25,
-    "whole_occlusion_probability": 0.5,
+    "whole_occlusion_probability": 0.0,
 
     "mirror_min_frames": 1,
     "mirror_max_frames": 4,
-    "mirror_probability": 0.5,
+    "mirror_probability": 0.25,
 }

@@ -18,7 +18,6 @@ def grid_search(search_space, experiment_root=None, model_version="1"):
 
         params = params.copy()
 
-        augmentation_params = params.pop("augmentation_params", None)
         run_name = params.pop("run_name", f"run_{run_id}")
 
         print(f"\nStarting run {run_id}/{len(search_space)}")
@@ -40,7 +39,7 @@ def grid_search(search_space, experiment_root=None, model_version="1"):
 
         try:
             device = get_available_device()
-            result = train_single_run(hyperparameters, device, save_dir, run_name, model_version=model_version, augmentation_params=augmentation_params)
+            result = train_single_run(hyperparameters, device, save_dir, run_name, model_version=model_version)
         except torch.cuda.OutOfMemoryError as e:
             print(f"OOM on {run_name}. Cleaning cache and retrying once...")
             gc.collect()
@@ -48,7 +47,7 @@ def grid_search(search_space, experiment_root=None, model_version="1"):
 
             try:
                 device = get_available_device()
-                result = train_single_run(hyperparameters, device, save_dir, run_name, model_version=model_version, augmentation_params=augmentation_params)
+                result = train_single_run(hyperparameters, device, save_dir, run_name, model_version=model_version)
             
             except torch.cuda.OutOfMemoryError as e:
                 print(f"out of memory again on {run_name}. Skipping run.")
