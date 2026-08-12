@@ -2,18 +2,15 @@ import torch
 import pandas as pd
 import gc
 import json
-from src.Skeleton_model.stgcn import STGCN
+from src.Skeleton_model.stgcn import STGCN, STGCNV2
 from scripts.common.seed import set_seed
-from src.config import DEFAULT_STGCN_PARAMS_V1, POSE_DATASET_ROOT, DEFAULT_POSE_AUGMENTATION_PARAMS, GAMMA_POSE_DATASET_ROOT
+from src.config import DEFAULT_STGCN_PARAMS_V1, POSE_DATASET_ROOT, DEFAULT_POSE_AUGMENTATION_PARAMS, COMBINED_POSE_DATASET_ROOT
 from scripts.common.get_device import get_available_device
 from src.rwf2000 import RWF2000PoseDataset
 from src.Skeleton_model.graph import SkeletonGraph, compute_joint_distance_to_center_of_gravity
 from src.Skeleton_model.train_model import train_model
 
-
-
-
-def grid_search(search_space, experiment_root=None):
+def grid_search(search_space, experiment_root=None, model_version="1"):
 
     results = []
 
@@ -48,7 +45,7 @@ def grid_search(search_space, experiment_root=None):
         device = get_available_device()
 
         if hyperparameters["use_gamma_corrected_data"]:
-            dataset_root = GAMMA_POSE_DATASET_ROOT
+            dataset_root = COMBINED_POSE_DATASET_ROOT
         else:
             dataset_root = POSE_DATASET_ROOT
             
@@ -58,7 +55,10 @@ def grid_search(search_space, experiment_root=None):
         val_dataset = RWF2000PoseDataset(dataset_root, split="val", max_people=hyperparameters["max_people"])
         radii = compute_joint_distance_to_center_of_gravity(radii_dataset)
         skeleton_graph = SkeletonGraph(radii, normalisation=hyperparameters["adjacency_normalisation_mode"])
-        model = STGCN(skeleton_graph.A, temporal_kernel_size=hyperparameters["temporal_kernel_size"], dropout=hyperparameters["dropout"], edge_importance_weighting=hyperparameters["edge_importance_weighting"]).to(device)
+        if model_version == "1":
+            model = STGCN(skeleton_graph.A, temporal_kernel_size=hyperparameters["temporal_kernel_size"], dropout=hyperparameters["dropout"], edge_importance_weighting=hyperparameters["edge_importance_weighting"]).to(device)
+        else:
+            model = STGCNV2(skeleton_graph.A, temporal_kernel_size=hyperparameters["temporal_kernel_size"], dropout=hyperparameters["dropout"], edge_importance_weighting=hyperparameters["edge_importance_weighting"]).to(device)
 
         try:
             result = train_model(model, train_dataset, val_dataset, hyperparameters, device, save_dir, run_name)

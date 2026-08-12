@@ -3,10 +3,14 @@ from pathlib import Path
 
 # paths
 PROJECT_ROOT = Path("/homes/mp2940/violence-detection-dissertation")
+
 DATASET_ROOT = Path("/homes/mp2940/demo/datasets/rwf-2000/RWF-2000")
 GAMMA_DATASET_ROOT = Path("/homes/mp2940/demo/datasets/rwf-2000/RWF-2000-gamma-067")
+
 POSE_DATASET_ROOT = Path("/homes/mp2940/demo/datasets/rwf-2000/pose_data")
 GAMMA_POSE_DATASET_ROOT = Path("/homes/mp2940/demo/datasets/rwf-2000/pose_data_gamma_067")
+COMBINED_POSE_DATASET_ROOT = Path("/homes/mp2940/demo/datasets/rwf-2000/pose_data_combined")
+
 CHECKPOINT_DIR = Path("/homes/mp2940/violence-detection-dissertation/checkpoints")
 
 DEFAULT_AUGMENTATION_PARAMS = {
@@ -90,7 +94,7 @@ DEFAULT_TRAINING_PARAMS_V3= {
     "min_lr": 1e-5,
     "cnn_min_lr": 1e-7,
     "factor": 0.5,
-    "use_differential_lr": True,
+    "use_differential_lr": False,
     "scheduler_patience": 5,
     "epochs": 75,
     "early_stopping_patience": 15,
@@ -104,7 +108,7 @@ DEFAULT_TRAINING_PARAMS_V3= {
     "classifier_hidden_size": 128,
     "dropout": 0.35,
     "cnn_cutoff": 19,
-    "cnn_unfreeze_from": 15,
+    "cnn_unfreeze_from": None,
     "freeze_cnn_batchnorm": True,
 
     "augmentation_params": DEFAULT_STRONG_AUGMENTATION_PARAMS, 
@@ -114,10 +118,9 @@ DEFAULT_STGCN_PARAMS_V1 = {
     "seed": 42, 
 
     # input
-    "use_gamma_corrected_data": True, 
+    "use_gamma_corrected_data": False, 
     "max_people": 4, 
     "batch_size": 4, 
-
 
     # augmentation
     "augment": True,

@@ -19,7 +19,7 @@ class FullGradCAM:
 
         for i, layer in enumerate(target_layers):
             forward_hook = layer.register_forward_hook(self._make_activation_hook(i))
-            backward_hook = layer.register_forward_hook(self._make_gradient_hook(i))
+            backward_hook = layer.register_full_backward_hook(self._make_gradient_hook(i))
 
             self.forward_hooks.append(forward_hook)
             self.backward_hooks.append(backward_hook)
@@ -33,7 +33,7 @@ class FullGradCAM:
 
     def _make_gradient_hook(self, layer_index):
         def save_gradient(module, inputs, output):
-            self.gradients[layer_index] = output
+            self.gradients[layer_index] = output[0]
         
         return save_gradient
     

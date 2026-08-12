@@ -222,3 +222,76 @@ class STGCN(nn.Module):
         x = x.view(B, -1)
 
         return x
+
+
+class STGCNV2(nn.Module):
+    def __init__(self,
+                 adjacency,
+                 in_channels=3,
+                 num_joints=17,
+                 temporal_kernel_size=9,
+                 dropout=0.5, 
+                 edge_importance_weighting=True,
+            ):
+        '''
+        adjacency shape: [K, V, V] wher K
+        '''
+        super().__init__()
+
+        adjacency = torch.as_tensor(adjacency, dtype=torch.float32)
+        self.register_buffer("adjacency", adjacency)
+        self.data_batch_norm = nn.BatchNorm1d(in_channels * num_joints) # normalise each joint-channel feature across the batch and time (3*17 = 51 independent normalisations)
+
+        self.stgcn_blocks = nn.ModuleList([
+            STGCNBlock(in_channels, 32, temporal_kernel_size=temporal_kernel_size, residual=False),
+            STGCNBlock(32, 32, temporal_kernel_size=temporal_kernel_size, dropout=dropout),
+            STGCNBlock(32, 32, temporal_kernel_size=temporal_kernel_size, dropout=dropout),
+            STGCNBlock(32, 32, temporal_kernel_size=temporal_kernel_size, dropout=dropout),
+            STGCNBlock(32, 64, stride=2, temporal_kernel_size=temporal_kernel_size, dropout=dropout),
+            STGCNBlock(64, 64, temporal_kernel_size=temporal_kernel_size, dropout=dropout),
+            STGCNBlock(64, 64, temporal_kernel_size=temporal_kernel_size, dropout=dropout),
+            STGCNBlock(64, 128, stride=2, temporal_kernel_size=temporal_kernel_size, dropout=dropout),
+            STGCNBlock(128, 128, temporal_kernel_size=temporal_kernel_size, dropout=dropout),
+            STGCNBlock(128, 128, temporal_kernel_size=temporal_kernel_size, dropout=dropout),
+        ])
+
+        if edge_importance_weighting: # learn weights for each connection in the skeleton graph
+            self.edge_importance = nn.ParameterList([
+                nn.Parameter(torch.ones_like(self.adjacency)) for _ in self.stgcn_blocks
+            ])
+        else:
+            self.edge_importance = [1.0 for _ in self.stgcn_blocks]
+
+        self.classifier = nn.Conv2d(in_channels=128, out_channels=2, kernel_size=1)
+
+    def forward(self, x):
+        '''
+        x shape: [B, C, T, V, M]
+        where:
+            B = Batch size
+            C = input channels -> (X, Y, Confidence)
+            T = Frames -> 150
+            V = Joints -> 17
+            M = people
+        '''
+
+        B, C, T, V, M = x.shape
+        x = x.permute(0, 4, 3, 2, 1).contiguous()
+        x = x.view(B*M, V*C, T)
+        x = self.data_batch_norm(x)
+        x = x.view(B, M, C, V, T)
+        x = x.permute(0, 1, 3, 4, 2).contiguous()
+        x = x.view(B*M, C, T, V)
+
+        for block, importance in zip(self.stgcn_blocks, self.edge_importance):
+            weighted_adjacency = self.adjacency * importance 
+            x = block(x, weighted_adjacency)
+
+        x = F.avg_pool2d(x, x.size()[2:])
+        x = x.view(B, M, 128, 1, 1)
+        x = x.mean(dim=1)
+
+        x = self.classifier(x)
+        x = x.view(B, -1)
+
+        return x
