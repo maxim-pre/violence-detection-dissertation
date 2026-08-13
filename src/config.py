@@ -8,6 +8,7 @@ DATASET_ROOT = Path("/homes/mp2940/demo/datasets/rwf-2000/RWF-2000")
 GAMMA_DATASET_ROOT = Path("/homes/mp2940/demo/datasets/rwf-2000/RWF-2000-gamma-067")
 
 POSE_DATASET_ROOT = Path("/homes/mp2940/demo/datasets/rwf-2000/pose_data")
+POSE_DATASET_ROOT_OCSORT = Path("/homes/mp2940/demo/datasets/rwf-2000/pose_data_ocsort")
 GAMMA_POSE_DATASET_ROOT = Path("/homes/mp2940/demo/datasets/rwf-2000/pose_data_gamma_067")
 COMBINED_POSE_DATASET_ROOT = Path("/homes/mp2940/demo/datasets/rwf-2000/pose_data_combined")
 
@@ -114,13 +115,48 @@ DEFAULT_TRAINING_PARAMS_V3= {
     "augmentation_params": DEFAULT_STRONG_AUGMENTATION_PARAMS, 
 }
 
+DEFAULT_TRAINING_PARAMS_V4= {
+    "seed": 42,
+
+    #input
+    "num_frames": 32,
+    "augment": True,
+    "batch_size": 8,
+    "input_mode": "diff",
+
+    #optimisation
+    "learning_rate": 1e-4,
+    "cnn_learning_rate": 1e-6,
+    "min_lr": 1e-5,
+    "cnn_min_lr": 1e-7,
+    "factor": 0.5,
+    "use_differential_lr": False,
+    "scheduler_patience": 5,
+    "epochs": 75,
+    "early_stopping_patience": 8,
+    "weight_decay": 5e-6,
+    "amsgrad": False,
+    "label_smoothing": 0.1,
+
+    # model hyperparameters
+    "hidden_channels": 64,
+    "reduced_channels": 96,
+    "classifier_hidden_size": 128,
+    "dropout": 0.35,
+    "cnn_cutoff": 19,
+    "cnn_unfreeze_from": None,
+    "freeze_cnn_batchnorm": True,
+
+    "augmentation_params": DEFAULT_STRONG_AUGMENTATION_PARAMS, 
+}
+
 DEFAULT_STGCN_PARAMS_V1 = {
     "seed": 42, 
 
     # input
     "use_gamma_corrected_data": False, 
     "max_people": 4, 
-    "batch_size": 4, 
+    "batch_size": 8, 
 
     # augmentation
     "augment": True,
@@ -144,10 +180,27 @@ DEFAULT_STGCN_PARAMS_V1 = {
 }
 
 DEFAULT_POSE_AUGMENTATION_PARAMS = {
+    # frame occlusion
     "whole_occlusion_min_frames": 10,
     "whole_occlusion_max_frames": 25,
     "whole_occlusion_probability": 0.0,
 
+    # Body part interpolation
+    "body_part_interpolation_min_frames": 3,
+    "body_part_interpolation_max_frames": 10,
+    "body_part_interpolation_probability": 0.0,
+
+    # Whole-skeleton interpolation
+    "interpolation_min_frames": 3,
+    "interpolation_max_frames": 10,
+    "interpolation_probability": 0.0,
+
+    # Random keypoint swapping
+    "swap_min_frames": 1,
+    "swap_max_frames": 4,
+    "swap_probability": 0.0,
+
+    # mirroring
     "mirror_min_frames": 1,
     "mirror_max_frames": 4,
     "mirror_probability": 0.25,

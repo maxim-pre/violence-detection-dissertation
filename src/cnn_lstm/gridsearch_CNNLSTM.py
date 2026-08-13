@@ -2,7 +2,7 @@ import torch
 import pandas as pd
 import gc
 from src.cnn_lstm.single_training_run_cnnlstm import train_single_run
-from src.config import DEFAULT_TRAINING_PARAMS_V1, DEFAULT_TRAINING_PARAMS_V2, DEFAULT_TRAINING_PARAMS_V3
+from src.config import DEFAULT_TRAINING_PARAMS_V1, DEFAULT_TRAINING_PARAMS_V2, DEFAULT_TRAINING_PARAMS_V3, DEFAULT_TRAINING_PARAMS_V4
 from scripts.common.get_device import get_available_device
 
 def grid_search(search_space, experiment_root=None, model_version="1"):
@@ -32,6 +32,8 @@ def grid_search(search_space, experiment_root=None, model_version="1"):
             hyperparameters = DEFAULT_TRAINING_PARAMS_V2.copy()
         elif model_version == "3":
             hyperparameters = DEFAULT_TRAINING_PARAMS_V3.copy()
+        elif model_version == "4":
+            hyperparameters = DEFAULT_TRAINING_PARAMS_V4.copy()
         else:
             raise(ValueError("incorrect model version passed"))
         

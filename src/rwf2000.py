@@ -229,7 +229,7 @@ class RWF2000Dataset(Dataset):
 
 class RWF2000PoseDataset(Dataset):
 
-    def __init__(self, root_dir, num_frames=150, num_keypoints=17, max_people=2, split="train", augment=False, augment_params=DEFAULT_POSE_AUGMENTATION_PARAMS):
+    def __init__(self, root_dir, num_frames=150, num_keypoints=17, max_people=4, split="train", augment=False, augment_params=DEFAULT_POSE_AUGMENTATION_PARAMS):
         self.root_dir = root_dir
         self.num_frames = num_frames
         self.num_keypoints = num_keypoints
@@ -252,14 +252,52 @@ class RWF2000PoseDataset(Dataset):
             [13, 14], # left knee, right knee
             [15, 16], # left ankle, right ankle
         ]
+        self.left_arm = [5, 7, 9]
+        self.right_arm = [6, 8, 10]
+        self.left_leg = [11, 13, 15]
+        self.right_leg = [12, 14, 16]
 
         self.augmentation_pipeline = S.Compose([
+            # frame occlusion
             S.SelectRandomFrames(
                 [S.WholeOcclusion()], 
                 min_num=self.augment_params["whole_occlusion_min_frames"], 
                 max_num=self.augment_params["whole_occlusion_max_frames"], 
                 p=self.augment_params["whole_occlusion_probability"], 
             ), 
+            # body part interpolation
+            S.SelectRandomWithBorder([
+                S.OneOf([
+                    S.SpecificOcclusion(self.left_arm), 
+                    S.SpecificOcclusion(self.right_arm),
+                    S.SpecificOcclusion(self.left_leg), 
+                    S.SpecificOcclusion(self.right_leg)
+                ])
+                ], 
+                [S.InterpolateOcclusions()], 
+                min_num=self.augment_params["body_part_interpolation_min_frames"],
+                max_num=self.augment_params["body_part_interpolation_max_frames"],
+                p=self.augment_params["body_part_interpolation_probability"]
+            ),
+
+            # Whole skeleton interpolation
+            S.SelectRandomWithBorder(
+                [S.WholeOcclusion()],
+                [S.InterpolateOcclusions()],
+                min_num=self.augment_params["interpolation_min_frames"],
+                max_num=self.augment_params["interpolation_max_frames"],
+                p=self.augment_params["interpolation_probability"]
+            ),
+
+            # random keypoint swapping
+            S.SelectRandomFrames(
+                [S.SwapPerturbation()],
+                min_num=self.augment_params["swap_min_frames"],
+                max_num=self.augment_params["swap_max_frames"],
+                contiguous=False,
+                p=self.augment_params["swap_probability"],
+            ),
+            # mirroring
             S.SelectRandomFrames(
                 [S.MirrorPerturbation(self.opposite_coco_points)], 
                 min_num=self.augment_params["mirror_min_frames"], 

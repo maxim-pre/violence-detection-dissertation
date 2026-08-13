@@ -10,6 +10,7 @@ from scripts.common.optimizer import build_optimizer, get_sheduler_min_lr, get_l
 from src.rwf2000 import RWF2000Dataset
 from src.cnn_lstm.cnn_lstm_v1 import CNNLSTMV1
 from src.cnn_lstm.cnn_lstm_v2 import CNNLSTMV2
+from src.cnn_lstm.cnn_lstm_v3 import CNNLSTMV3
 from src.config import DATASET_ROOT, DEFAULT_AUGMENTATION_PARAMS
 import json
 
@@ -41,6 +42,15 @@ def train_single_run(hyperparameters, device, save_dir, run_name, model_version=
     
     elif model_version == "2" or model_version == "3":
         model = CNNLSTMV2(
+            hidden_channels=hyperparameters["hidden_channels"],
+            reduced_channels=hyperparameters["reduced_channels"],
+            classifier_hidden_size=hyperparameters["classifier_hidden_size"],
+            dropout=hyperparameters["dropout"],
+            cnn_cutoff=hyperparameters["cnn_cutoff"],
+            cnn_unfreeze_from=hyperparameters["cnn_unfreeze_from"]
+        ).to(device)
+    elif model_version == "4":
+        model = CNNLSTMV3(
             hidden_channels=hyperparameters["hidden_channels"],
             reduced_channels=hyperparameters["reduced_channels"],
             classifier_hidden_size=hyperparameters["classifier_hidden_size"],
