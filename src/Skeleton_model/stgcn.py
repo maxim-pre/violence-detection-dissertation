@@ -243,16 +243,16 @@ class STGCNV2(nn.Module):
         self.data_batch_norm = nn.BatchNorm1d(in_channels * num_joints) # normalise each joint-channel feature across the batch and time (3*17 = 51 independent normalisations)
 
         self.stgcn_blocks = nn.ModuleList([
-            STGCNBlock(in_channels, 32, temporal_kernel_size=temporal_kernel_size, residual=False),
-            STGCNBlock(32, 32, temporal_kernel_size=temporal_kernel_size, dropout=dropout),
-            STGCNBlock(32, 32, temporal_kernel_size=temporal_kernel_size, dropout=dropout),
-            STGCNBlock(32, 32, temporal_kernel_size=temporal_kernel_size, dropout=dropout),
-            STGCNBlock(32, 64, stride=2, temporal_kernel_size=temporal_kernel_size, dropout=dropout),
-            STGCNBlock(64, 64, temporal_kernel_size=temporal_kernel_size, dropout=dropout),
-            STGCNBlock(64, 64, temporal_kernel_size=temporal_kernel_size, dropout=dropout),
-            STGCNBlock(64, 128, stride=2, temporal_kernel_size=temporal_kernel_size, dropout=dropout),
-            STGCNBlock(128, 128, temporal_kernel_size=temporal_kernel_size, dropout=dropout),
-            STGCNBlock(128, 128, temporal_kernel_size=temporal_kernel_size, dropout=dropout),
+            STGCNBlock(in_channels, 48, temporal_kernel_size=temporal_kernel_size, residual=False),
+            STGCNBlock(48, 48, temporal_kernel_size=temporal_kernel_size, dropout=dropout),
+            STGCNBlock(48, 48, temporal_kernel_size=temporal_kernel_size, dropout=dropout),
+            STGCNBlock(48, 48, temporal_kernel_size=temporal_kernel_size, dropout=dropout),
+            STGCNBlock(48, 96, stride=2, temporal_kernel_size=temporal_kernel_size, dropout=dropout),
+            STGCNBlock(96, 96, temporal_kernel_size=temporal_kernel_size, dropout=dropout),
+            STGCNBlock(96, 96, temporal_kernel_size=temporal_kernel_size, dropout=dropout),
+            STGCNBlock(96, 192, stride=2, temporal_kernel_size=temporal_kernel_size, dropout=dropout),
+            STGCNBlock(192, 192, temporal_kernel_size=temporal_kernel_size, dropout=dropout),
+            STGCNBlock(192, 192, temporal_kernel_size=temporal_kernel_size, dropout=dropout),
         ])
 
         if edge_importance_weighting: # learn weights for each connection in the skeleton graph
@@ -262,7 +262,7 @@ class STGCNV2(nn.Module):
         else:
             self.edge_importance = [1.0 for _ in self.stgcn_blocks]
 
-        self.classifier = nn.Conv2d(in_channels=128, out_channels=2, kernel_size=1)
+        self.classifier = nn.Conv2d(in_channels=192, out_channels=2, kernel_size=1)
 
     def forward(self, x):
         '''
@@ -288,7 +288,7 @@ class STGCNV2(nn.Module):
             x = block(x, weighted_adjacency)
 
         x = F.avg_pool2d(x, x.size()[2:])
-        x = x.view(B, M, 128, 1, 1)
+        x = x.view(B, M, 192, 1, 1)
         x = x.mean(dim=1)
 
         x = self.classifier(x)

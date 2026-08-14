@@ -229,11 +229,12 @@ class RWF2000Dataset(Dataset):
 
 class RWF2000PoseDataset(Dataset):
 
-    def __init__(self, root_dir, num_frames=150, num_keypoints=17, max_people=4, split="train", augment=False, augment_params=DEFAULT_POSE_AUGMENTATION_PARAMS):
+    def __init__(self, root_dir, num_frames=150, num_keypoints=17, max_people=4, score_mode="total_confidence", split="train", augment=False, augment_params=DEFAULT_POSE_AUGMENTATION_PARAMS):
         self.root_dir = root_dir
         self.num_frames = num_frames
         self.num_keypoints = num_keypoints
         self.max_people = max_people
+        self.score_mode = score_mode
         self.split = split
         self.augment = augment
         self.augment_params = augment_params
@@ -357,6 +358,7 @@ class RWF2000PoseDataset(Dataset):
             num_frames=self.num_frames,
             num_keypoints=self.num_keypoints,
             max_people=self.max_people,
+            track_score_mode=self.score_mode,
         )
 
         if self.augment:

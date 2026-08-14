@@ -50,9 +50,9 @@ def grid_search(search_space, experiment_root=None, model_version="1"):
             dataset_root = POSE_DATASET_ROOT
             
 
-        radii_dataset = RWF2000PoseDataset(dataset_root, split="train", max_people=hyperparameters["max_people"])
-        train_dataset = RWF2000PoseDataset(dataset_root, split="train", max_people=hyperparameters["max_people"], augment=hyperparameters["augment"], augment_params=augmentation_params)
-        val_dataset = RWF2000PoseDataset(dataset_root, split="val", max_people=hyperparameters["max_people"])
+        radii_dataset = RWF2000PoseDataset(dataset_root, split="train", max_people=hyperparameters["max_people"], score_mode=hyperparameters["score_mode"])
+        train_dataset = RWF2000PoseDataset(dataset_root, split="train", max_people=hyperparameters["max_people"], score_mode=hyperparameters["score_mode"], augment=hyperparameters["augment"], augment_params=augmentation_params)
+        val_dataset = RWF2000PoseDataset(dataset_root, split="val", max_people=hyperparameters["max_people"], score_mode=hyperparameters["score_mode"])
         radii = compute_joint_distance_to_center_of_gravity(radii_dataset)
         skeleton_graph = SkeletonGraph(radii, normalisation=hyperparameters["adjacency_normalisation_mode"])
         if model_version == "1":

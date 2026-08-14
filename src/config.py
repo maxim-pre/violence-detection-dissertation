@@ -125,9 +125,9 @@ DEFAULT_TRAINING_PARAMS_V4= {
     "input_mode": "diff",
 
     #optimisation
-    "learning_rate": 1e-4,
+    "learning_rate": 5e-5,
     "cnn_learning_rate": 1e-6,
-    "min_lr": 1e-5,
+    "min_lr": 1e-7,
     "cnn_min_lr": 1e-7,
     "factor": 0.5,
     "use_differential_lr": False,
@@ -156,21 +156,22 @@ DEFAULT_STGCN_PARAMS_V1 = {
     # input
     "use_gamma_corrected_data": False, 
     "max_people": 4, 
+    "score_mode": "total_confidence",
     "batch_size": 8, 
 
     # augmentation
-    "augment": True,
+    "augment": False,
 
     # optimisation
-    "epochs": 80,
+    "epochs": 50,
     "learning_rate": 2e-4, 
     "min_lr": 1e-6, 
-    "scheduler_patience": 10, 
+    "scheduler_patience": 4, 
     "factor": 0.5, 
-    "early_stopping_patience": 15,
+    "early_stopping_patience": 8,
     "amsgrad": False, 
     "weight_decay": 1e-4, 
-    "label_smoothing": 0.0,
+    "label_smoothing": 0.1,
 
     # model
     "adjacency_normalisation_mode": "column", 
@@ -203,5 +204,5 @@ DEFAULT_POSE_AUGMENTATION_PARAMS = {
     # mirroring
     "mirror_min_frames": 1,
     "mirror_max_frames": 4,
-    "mirror_probability": 0.25,
+    "mirror_probability": 0.0,
 }

@@ -164,9 +164,9 @@ def build_pose_dataset(
 
     return failed_videos
 
-def pose_data_to_stgcn_tensor(pose_data, num_frames=150, num_keypoints=17, max_people=2):
+def pose_data_to_stgcn_tensor(pose_data, num_frames=150, num_keypoints=17, max_people=4, track_score_mode="total_confidence"):
     '''
-    convert pose data -> (3, T, V, M)
+    convert pose data -> (3, 150, 17, 4)
 
     where: 
         C = (normalised_X_coordinate, normalised_Y_coordinate, confidence)
@@ -177,28 +177,35 @@ def pose_data_to_stgcn_tensor(pose_data, num_frames=150, num_keypoints=17, max_p
 
     H, W = pose_data["original_video_shape"]
 
-    # 1. rank each track so we can choose the top two tracks
-    # will rank the tracks by duration * confidence. i.e. (number of frames appeard * average confidence of detected joints)
+    # 1. Rank each track to determine which people to include in tensor
+    track_confidence_sum = defaultdict(float) 
+    track_joint_count = defaultdict(int)
 
-    track_frame_count = defaultdict(int)
-    track_keypoint_count = defaultdict(int)
-    track_keypoint_confidence_sum = defaultdict(float)
-
+    # loop over all people in the frame for every frame
     for frame in pose_data["frames"]:
         for person in frame["people"]:
 
-            track_id = int(person["track_id"])
-            confidences = person["keypoint_confidence"].float()
+            track_id = int(person["track_id"]) # get the track id
+            confidences = person["keypoint_confidence"].float() # get the confidence values (array of length 17)
 
-            track_frame_count[track_id] += 1
-            track_keypoint_count[track_id] += num_keypoints
-            track_keypoint_confidence_sum[track_id] += confidences.sum().item()
+            track_confidence_sum[track_id] += confidences.sum().item() # score is based on the total of joint scores for every joint in every frame
+            track_joint_count[track_id] += len(confidences) # (len 17)
 
-    # compute track score
     track_scores = {}
-    for track_id in track_frame_count:
-        mean_confidence = track_keypoint_confidence_sum[track_id] / track_keypoint_count[track_id]
-        track_scores[track_id] = track_frame_count[track_id] * mean_confidence
+
+    for track_id in track_confidence_sum:
+
+        if track_score_mode == "total_confidence":
+            track_scores[track_id] = track_confidence_sum[track_id] # takes into account how many frames the person is iin
+
+        elif track_score_mode == "mean_confidence":
+            mean_confidence = track_confidence_sum[track_id] / track_joint_count[track_id] # average joint confidence across all frames
+            total_tracked_frames = track_joint_count[track_id] / num_keypoints
+
+            track_scores[track_id] = mean_confidence * (total_tracked_frames ** 0.5)
+        else:
+            raise ValueError(f"Unknown track_score_mode: {track_score_mode}")
+
 
     # select the strongest tracks according to max_people
     sorted_tracks = sorted(track_scores.items(), key=lambda item: item[1], reverse=True)
@@ -213,12 +220,11 @@ def pose_data_to_stgcn_tensor(pose_data, num_frames=150, num_keypoints=17, max_p
 
     for frame in pose_data["frames"]:
         frame_index = frame["frame_index"]
-        if not 0 <= frame_index < num_frames: continue
 
         for person in frame["people"]:
             
-            track_id = person["track_id"]
-            if track_id not in track_to_person_index: continue 
+            track_id = int(person["track_id"])
+            if track_id not in track_to_person_index: continue # only add top four tracks
 
             person_index = track_to_person_index[track_id]
             keypoints = person["keypoints"]
