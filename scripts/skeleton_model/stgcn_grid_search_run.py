@@ -8,7 +8,7 @@ if __name__ == "__main__":
     model_version = "1"  # Change to "2" for STGCNV2
 
     if model_version == "1":
-        experiment_root = CHECKPOINT_DIR / "STGCN_V1" / "people_aggregation_new_DS_2"
+        experiment_root = CHECKPOINT_DIR / "STGCN_V1" / "people_aggregation_new_DS_2_aug"
     elif model_version == "2":
         experiment_root = CHECKPOINT_DIR / "STGCN_V2" / "baseline_2"
     else:

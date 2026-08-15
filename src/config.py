@@ -166,7 +166,7 @@ DEFAULT_STGCN_PARAMS_V1 = {
     "batch_size": 12, 
 
     # augmentation
-    "augment": False,
+    "augment": True,
 
     # optimisation
     "epochs": 50,

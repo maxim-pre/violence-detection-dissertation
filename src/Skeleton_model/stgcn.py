@@ -212,7 +212,7 @@ class STGCN(nn.Module):
         x = x.permute(0, 4, 3, 2, 1).contiguous()
         x = x.view(B*M, V*C, T)
         x = self.data_batch_norm(x)
-        x = x.view(B, M, C, V, T)
+        x = x.view(B, M, V, C, T)
         x = x.permute(0, 1, 3, 4, 2).contiguous()
         x = x.view(B*M, C, T, V)
 
@@ -302,7 +302,7 @@ class STGCNV2(nn.Module):
         x = x.permute(0, 4, 3, 2, 1).contiguous()
         x = x.view(B*M, V*C, T)
         x = self.data_batch_norm(x)
-        x = x.view(B, M, C, V, T)
+        x = x.view(B, M, V, C, T)
         x = x.permute(0, 1, 3, 4, 2).contiguous()
         x = x.view(B*M, C, T, V)
 
