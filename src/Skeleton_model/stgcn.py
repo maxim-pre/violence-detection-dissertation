@@ -151,6 +151,31 @@ class STGCNBlock(nn.Module):
         x = self.relu(x)
         return x
 
+class MaskedBatchNorm(nn.BatchNorm1d):
+    '''
+    computes batch norm statistics from just the non-zero padded tracks
+    '''
+
+    def forward(self, x, mask=None):
+        '''
+            x: [B*M, V*C, T]
+            mask: [B*M]
+        '''
+
+        if mask is None or not self.training: # dont update statistics if not training
+            return super().forward(x)
+
+        real = x[mask]
+        batch_mean = real.mean(dim=(0,2))
+        batch_var = real.var(dim=(0,2), unbiased=False)
+
+        with torch.no_grad():
+            self.running_mean = (1 - self.momentum) * self.running_mean + self.momentum * batch_mean
+            self.running_var = (1 - self.momentum) * self.running_var + self.momentum * batch_var
+
+        # set training to false because we've already computed running mean/var
+        return F.batch_norm(x, batch_mean, batch_var, self.weight, self.bias, training=False, eps=self.eps)
+
 class STGCN(nn.Module):
     def __init__(self,
                  adjacency,
@@ -162,13 +187,14 @@ class STGCN(nn.Module):
                  people_aggregation="masked_mean",
             ):
         '''
-        adjacency shape: [K, V, V] wher K
+        adjacency shape: [K, V, V] where is number of partitions
         '''
         super().__init__()
 
         adjacency = torch.as_tensor(adjacency, dtype=torch.float32)
         self.register_buffer("adjacency", adjacency)
-        self.data_batch_norm = nn.BatchNorm1d(in_channels * num_joints) # normalise each joint-channel feature across the batch and time (3*17 = 51 independent normalisations)
+        #self.data_batch_norm = nn.BatchNorm1d(in_channels * num_joints) # normalise each joint-channel feature across the batch and time (3*17 = 51 independent normalisations)
+        self.data_batch_norm=MaskedBatchNorm(in_channels * num_joints)
         self.people_aggregation = people_aggregation
 
         self.stgcn_blocks = nn.ModuleList([
@@ -208,10 +234,11 @@ class STGCN(nn.Module):
 
         # 0 if person M in batch B has no detection anywhere in the clip
         presence = (x[:, 2] > 0).any(dim=1).any(dim=1).float()  # (B, M)
+        presence_flat = presence.view(B*M).bool()
 
         x = x.permute(0, 4, 3, 2, 1).contiguous()
         x = x.view(B*M, V*C, T)
-        x = self.data_batch_norm(x)
+        x = self.data_batch_norm(x, mask=presence_flat)
         x = x.view(B, M, V, C, T)
         x = x.permute(0, 1, 3, 4, 2).contiguous()
         x = x.view(B*M, C, T, V)

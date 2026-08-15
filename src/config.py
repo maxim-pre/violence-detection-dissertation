@@ -157,7 +157,7 @@ DEFAULT_TRAINING_PARAMS_V4= {
 }
 
 DEFAULT_STGCN_PARAMS_V1 = {
-    "seed": 42, 
+    "seed": 45, 
 
     # input
     "use_gamma_corrected_data": False, 
@@ -191,25 +191,26 @@ DEFAULT_POSE_AUGMENTATION_PARAMS = {
     # frame occlusion
     "whole_occlusion_min_frames": 10,
     "whole_occlusion_max_frames": 25,
-    "whole_occlusion_probability": 0.3,
+    "whole_occlusion_probability": 0.5,
 
     # Body part interpolation
     "body_part_interpolation_min_frames": 1,
     "body_part_interpolation_max_frames": 10,
-    "body_part_interpolation_probability": 0.4,
+    "body_part_interpolation_probability": 0.65,
 
     # Whole-skeleton interpolation
     "interpolation_min_frames": 1,
     "interpolation_max_frames": 10,
-    "interpolation_probability": 0.4,
+    "interpolation_probability": 0.65,
 
     # Random keypoint swapping
     "swap_min_frames": 1,
     "swap_max_frames": 4,
-    "swap_probability": 0.4,
+    "swap_probability": 0.5,
 
     # mirroring
     "mirror_min_frames": 1,
     "mirror_max_frames": 4,
-    "mirror_probability": 0.4,
+    "mirror_probability": 0.5,
 }
+
