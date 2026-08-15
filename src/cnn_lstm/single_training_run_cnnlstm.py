@@ -56,7 +56,8 @@ def train_single_run(hyperparameters, device, save_dir, run_name, model_version=
             classifier_hidden_size=hyperparameters["classifier_hidden_size"],
             dropout=hyperparameters["dropout"],
             cnn_cutoff=hyperparameters["cnn_cutoff"],
-            cnn_unfreeze_from=hyperparameters["cnn_unfreeze_from"]
+            cnn_unfreeze_from=hyperparameters["cnn_unfreeze_from"],
+            pooling_mode=hyperparameters["pooling_mode"]
         ).to(device)
     else:
         raise(ValueError("model version doesn't exist"))

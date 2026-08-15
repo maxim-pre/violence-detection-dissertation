@@ -15,9 +15,13 @@ class CNNLSTMV3(nn.Module):
             num_classes = 2,
             dropout = 0.4, 
             cnn_cutoff = 19,
-            cnn_unfreeze_from=None
+            cnn_unfreeze_from=None, 
+            pooling_mode="double", # "double" or "avg" or "max" or "max_flatten"
     ):
         super().__init__()
+        if pooling_mode not in ("double", "avg", "max", "max_flatten"):
+            raise ValueError("pooling_mode must be 'double', 'avg', 'max', or 'max_flatten'")
+        self.pooling_mode = pooling_mode
 
         # Load MobileNetV2 with pretrained weights
         weights = MobileNet_V2_Weights.DEFAULT
@@ -57,12 +61,14 @@ class CNNLSTMV3(nn.Module):
             kernel_size=3
         )
 
-        self.maxpool = nn.MaxPool2d(
-            kernel_size=2,
-            stride=2
-        )
-        
+        self.maxpool = nn.MaxPool2d(kernel_size=2, stride=2)
         self.avgpool = nn.AdaptiveAvgPool2d((1, 1))
+        self.global_maxpool = nn.AdaptiveMaxPool2d((1, 1))
+
+        if pooling_mode == "max_flatten":
+            classifier_input_size = hidden_channels * 3 * 3
+        else:
+            classifier_input_size = hidden_channels
 
         self.classifier = nn.Sequential(
             nn.Dropout(dropout), 
@@ -71,6 +77,18 @@ class CNNLSTMV3(nn.Module):
             nn.Dropout(dropout),
             nn.Linear(classifier_hidden_size, num_classes)
         )
+
+    def _pool(self, x):
+        if self.pooling_mode == "double":
+            x = self.maxpool(x)
+            x = self.avgpool(x)
+        elif self.pooling_mode == "avg":
+            x = self.avgpool(x)
+        elif self.pooling_mode == "max":
+            x = self.global_maxpool(x)
+        elif self.pooling_mode == "max_flatten":
+            x = self.maxpool(x)  # # (B, hidden_channels, 3, 3)
+        return x
     
     def forward(self, x):
         '''
@@ -108,12 +126,10 @@ class CNNLSTMV3(nn.Module):
         last_hidden = outputs[:, -1]
         # shape: (4, 128, 7, 7)
 
-        last_hidden = self.maxpool(last_hidden)
-        # (4, 128, 3, 3)
+        pooled = self._pool(last_hidden)
 
-        pooled = self.avgpool(last_hidden)
-        # shape: (4, 128, 1, 1)
-
+        # "max_flatten": (B, hidden_channels * flatten_pool_size * flatten_pool_size)
+        # others: (B, hidden_channels)
         pooled = torch.flatten(pooled, start_dim=1)
         # shape: (4, 128)
 

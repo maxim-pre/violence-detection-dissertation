@@ -19,7 +19,7 @@ def extract_pose_tracking_data(
 
 ):
     
-    results = model.track(source=video_path, stream=True, persist=True, imgsz=imgsz,
+    results = model.track(source=video_path, stream=True, persist=False, imgsz=imgsz,
                           tracker=tracker, conf=conf, device=device, verbose=False)
 
     frames = []

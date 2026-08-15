@@ -7,6 +7,11 @@ PROJECT_ROOT = Path("/homes/mp2940/violence-detection-dissertation")
 DATASET_ROOT = Path("/homes/mp2940/demo/datasets/rwf-2000/RWF-2000")
 GAMMA_DATASET_ROOT = Path("/homes/mp2940/demo/datasets/rwf-2000/RWF-2000-gamma-067")
 
+# persist=False
+POSE_DATASET_ROOT_BYTETRACK = Path("/homes/mp2940/demo/datasets/rwf-2000/pose_data_bytetrack")
+POSE_DATASET_ROOT_OCSORT2 = Path("/homes/mp2940/demo/datasets/rwf-2000/pose_data_ocsort2")
+
+# persist=True
 POSE_DATASET_ROOT = Path("/homes/mp2940/demo/datasets/rwf-2000/pose_data")
 POSE_DATASET_ROOT_OCSORT = Path("/homes/mp2940/demo/datasets/rwf-2000/pose_data_ocsort")
 GAMMA_POSE_DATASET_ROOT = Path("/homes/mp2940/demo/datasets/rwf-2000/pose_data_gamma_067")
@@ -134,7 +139,7 @@ DEFAULT_TRAINING_PARAMS_V4= {
     "scheduler_patience": 5,
     "epochs": 75,
     "early_stopping_patience": 8,
-    "weight_decay": 5e-6,
+    "weight_decay": 1e-5,
     "amsgrad": False,
     "label_smoothing": 0.1,
 
@@ -146,6 +151,7 @@ DEFAULT_TRAINING_PARAMS_V4= {
     "cnn_cutoff": 19,
     "cnn_unfreeze_from": None,
     "freeze_cnn_batchnorm": True,
+    "pooling_mode": "double",
 
     "augmentation_params": DEFAULT_STRONG_AUGMENTATION_PARAMS, 
 }
@@ -157,7 +163,7 @@ DEFAULT_STGCN_PARAMS_V1 = {
     "use_gamma_corrected_data": False, 
     "max_people": 4, 
     "score_mode": "total_confidence",
-    "batch_size": 8, 
+    "batch_size": 12, 
 
     # augmentation
     "augment": False,
@@ -166,43 +172,44 @@ DEFAULT_STGCN_PARAMS_V1 = {
     "epochs": 50,
     "learning_rate": 2e-4, 
     "min_lr": 1e-6, 
-    "scheduler_patience": 4, 
+    "scheduler_patience": 5, 
     "factor": 0.5, 
-    "early_stopping_patience": 8,
+    "early_stopping_patience": 10,
     "amsgrad": False, 
-    "weight_decay": 1e-4, 
-    "label_smoothing": 0.1,
+    "weight_decay": 0.0, 
+    "label_smoothing": 0.0,
 
     # model
     "adjacency_normalisation_mode": "column", 
     "temporal_kernel_size": 9, 
     "dropout": 0.3, 
-    "edge_importance_weighting": True
+    "edge_importance_weighting": True,
+    "people_aggregation": "masked_mean",
 }
 
 DEFAULT_POSE_AUGMENTATION_PARAMS = {
     # frame occlusion
     "whole_occlusion_min_frames": 10,
     "whole_occlusion_max_frames": 25,
-    "whole_occlusion_probability": 0.0,
+    "whole_occlusion_probability": 0.3,
 
     # Body part interpolation
-    "body_part_interpolation_min_frames": 3,
+    "body_part_interpolation_min_frames": 1,
     "body_part_interpolation_max_frames": 10,
-    "body_part_interpolation_probability": 0.0,
+    "body_part_interpolation_probability": 0.4,
 
     # Whole-skeleton interpolation
-    "interpolation_min_frames": 3,
+    "interpolation_min_frames": 1,
     "interpolation_max_frames": 10,
-    "interpolation_probability": 0.0,
+    "interpolation_probability": 0.4,
 
     # Random keypoint swapping
     "swap_min_frames": 1,
     "swap_max_frames": 4,
-    "swap_probability": 0.0,
+    "swap_probability": 0.4,
 
     # mirroring
     "mirror_min_frames": 1,
     "mirror_max_frames": 4,
-    "mirror_probability": 0.0,
+    "mirror_probability": 0.4,
 }

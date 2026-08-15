@@ -22,6 +22,7 @@ def train_one_epoch(model, dataloader, criterion, optimizer, device):
         loss = criterion(logits, labels)
 
         loss.backward()
+        # torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
         optimizer.step()
 
         predictions = logits.argmax(dim=1)

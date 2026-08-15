@@ -159,6 +159,7 @@ class STGCN(nn.Module):
                  temporal_kernel_size=9,
                  dropout=0.5, 
                  edge_importance_weighting=True,
+                 people_aggregation="masked_mean",
             ):
         '''
         adjacency shape: [K, V, V] wher K
@@ -168,6 +169,7 @@ class STGCN(nn.Module):
         adjacency = torch.as_tensor(adjacency, dtype=torch.float32)
         self.register_buffer("adjacency", adjacency)
         self.data_batch_norm = nn.BatchNorm1d(in_channels * num_joints) # normalise each joint-channel feature across the batch and time (3*17 = 51 independent normalisations)
+        self.people_aggregation = people_aggregation
 
         self.stgcn_blocks = nn.ModuleList([
             STGCNBlock(in_channels, 64, temporal_kernel_size=temporal_kernel_size, residual=False), 
@@ -203,6 +205,10 @@ class STGCN(nn.Module):
         '''
 
         B, C, T, V, M = x.shape
+
+        # 0 if person M in batch B has no detection anywhere in the clip
+        presence = (x[:, 2] > 0).any(dim=1).any(dim=1).float()  # (B, M)
+
         x = x.permute(0, 4, 3, 2, 1).contiguous()
         x = x.view(B*M, V*C, T)
         x = self.data_batch_norm(x)
@@ -215,9 +221,26 @@ class STGCN(nn.Module):
             x = block(x, weighted_adjacency)
 
         x = F.avg_pool2d(x, x.size()[2:])
-        x = x.view(B, M, 256, 1, 1)
-        x = x.mean(dim=1)
+        x = x.view(B, M, 256)
 
+        if self.people_aggregation == "masked_mean":
+            mask = presence.unsqueeze(-1) # (B, M, 1)
+            summed = (x * mask).sum(dim=1) # (B, 256)
+            count = mask.sum(dim=1).clamp(min=1.0) # (B, 1)
+            x = summed / count
+
+        elif self.people_aggregation == "max":
+            # push absent people to -inf so they never win the max
+            mask = presence.unsqueeze(-1).bool()                 # [B, M, 1]
+            x = x.masked_fill(~mask, float("-inf"))
+            x = x.max(dim=1).values                              # [B, 256]
+            # max over all -inf gives -inf — clamp back to 0
+            x = torch.where(torch.isfinite(x), x, torch.zeros_like(x))
+        else:
+            raise ValueError("people_aggregation must be 'masked_mean' or 'max'")
+
+
+        x = x.view(B, x.size(1), 1, 1)
         x = self.classifier(x)
         x = x.view(B, -1)
 
