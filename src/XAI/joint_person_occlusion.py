@@ -37,7 +37,7 @@ class JointOcclusion:
         num_frames = T 
         start, end = self._get_window_bounds(frame_index, num_frames)
         occluded = input_tensor.clone()
-        occluded[:, :, start:end, joint_index, person_index] = 0 
+        occluded[:, :, start:end, joint_index, person_index] = 0 # set one joint for one person around the temporal window to zero
         return occluded
 
     def _occlude_person(self, input_tensor, frame_index, person_index):
@@ -68,7 +68,7 @@ class JointOcclusion:
         if target_class is None:
             target_class = baseline_probabilities.argmax(dim=1).item() # selects the models predicted class
 
-        baseline_target_probability = baseline_probabilities[0, target_class]
+        baseline_target_probability = baseline_probabilities[0, target_class] # unperturbed prediction confidence (reference point)
 
         joint_importance = torch.zeros(T, V, M, device=input_tensor.device)
         person_importance = torch.zeros(T, M, device=input_tensor.device)
@@ -77,10 +77,10 @@ class JointOcclusion:
         for frame_index in range(T):
             for person_index in range(M):
                 for joint_index in range(V):
-                    occluded_input = self._occlude_joint(input_tensor, frame_index, joint_index, person_index)
-                    _, occluded_probability = self._predict(occluded_input)
+                    occluded_input = self._occlude_joint(input_tensor, frame_index, joint_index, person_index) # occlude the joint over temporal window
+                    _, occluded_probability = self._predict(occluded_input) # calculate prediction confidence of occluded input
                     occluded_target_probability = occluded_probability[0, target_class]
-                    joint_importance[frame_index, joint_index, person_index] = baseline_target_probability - occluded_target_probability
+                    joint_importance[frame_index, joint_index, person_index] = baseline_target_probability - occluded_target_probability # save prediction confidence 
 
         # person importance
         for frame_index in range(T):
@@ -95,6 +95,6 @@ class JointOcclusion:
             "baseline_probabilities": baseline_probabilities,
             "predicted_class": baseline_probabilities.argmax(dim=1).item(),
             "target_class": target_class,
-            "joint_importance": joint_importance,
-            "person_importance": person_importance,
+            "joint_importance": joint_importance, # [T, V, M]
+            "person_importance": person_importance, # [T, M]
         }

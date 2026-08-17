@@ -232,8 +232,9 @@ class STGCN(nn.Module):
 
         B, C, T, V, M = x.shape
 
-        # 0 if person M in batch B has no detection anywhere in the clip
-        presence = (x[:, 2] > 0).any(dim=1).any(dim=1).float()  # (B, M)
+        has_confidence = x[:, 2] > 0 # shape [B, T, V, M]
+        present_in_frame = has_confidence.any(dim=2) # shape [B, T, M]
+        presence = present_in_frame.any(dim=1).float() # shape [B, M]
         presence_flat = presence.view(B*M).bool()
 
         x = x.permute(0, 4, 3, 2, 1).contiguous()

@@ -169,15 +169,15 @@ DEFAULT_STGCN_PARAMS_V1 = {
     "augment": True,
 
     # optimisation
-    "epochs": 50,
-    "learning_rate": 2e-4, 
+    "epochs": 60,
+    "learning_rate": 3e-4, 
     "min_lr": 1e-6, 
     "scheduler_patience": 5, 
     "factor": 0.5, 
-    "early_stopping_patience": 10,
+    "early_stopping_patience": 20,
     "amsgrad": False, 
-    "weight_decay": 0.0, 
-    "label_smoothing": 0.0,
+    "weight_decay": 5e-5, 
+    "label_smoothing": 0.2,
 
     # model
     "adjacency_normalisation_mode": "column", 
