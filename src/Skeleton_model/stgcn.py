@@ -15,13 +15,64 @@ Sijie Yan, Yuanjun Xiong, Dahua Lin
 
 '''
 
+class MaskedBatchNorm1d(nn.BatchNorm1d):
+    # computes batch norm statistics from just the non-zero padded tracks
+
+    def forward(self, x, mask=None):
+        # x: [B*M, V*C, T]
+        # mask: [B*M]
+
+        if mask is None or not self.training: # dont update statistics if not training
+            return super().forward(x)
+
+        real = x[mask]
+        batch_mean = real.mean(dim=(0,2))
+        batch_var = real.var(dim=(0,2), unbiased=False)
+
+        with torch.no_grad():
+            self.running_mean = (1 - self.momentum) * self.running_mean + self.momentum * batch_mean
+            self.running_var = (1 - self.momentum) * self.running_var + self.momentum * batch_var
+
+        # set training to false because we've already computed running mean/var
+        return F.batch_norm(x, batch_mean, batch_var, self.weight, self.bias, training=False, eps=self.eps)
+
+class MaskedBatchNorm2d(nn.BatchNorm2d):
+    # computes batch norm statistics from just the non-zero padded tracks
+
+    def forward(self, x, mask=None):
+        # x: [B*M, C, T, V]
+        # mask: [B*M]
+
+        if mask is None or not self.training: # dont update statistics if not training
+            return super().forward(x)
+
+        real = x[mask]
+        batch_mean = real.mean(dim=(0,2,3))
+        batch_var = real.var(dim=(0,2,3), unbiased=False)
+
+        with torch.no_grad():
+            self.running_mean = (1 - self.momentum) * self.running_mean + self.momentum * batch_mean
+            self.running_var = (1 - self.momentum) * self.running_var + self.momentum * batch_var
+
+        # can't use F.batch_norm with 2d
+        mean = batch_mean.view(1, -1, 1, 1)   # [1, C, 1, 1]
+        var = batch_var.view(1, -1, 1, 1)     
+        weight = self.weight.view(1, -1, 1, 1)  
+        bias = self.bias.view(1, -1, 1, 1)      
+
+        std = torch.sqrt(var + self.eps) 
+        normalised_x = (x - mean) / std # [B*M, C, T, V]
+        normalised_x = normalised_x * weight + bias  
+
+        return normalised_x
+
 class SpatialGraphConv(nn.Module):
     def __init__(self, in_channels, out_channels, num_partitions=3):
-        '''
-        in_channels: number of channels in the input data 
-        out_channels: number of channels produced by the convolution
-        num_partitions = 3 (root, centripetal, centrifugal)
-        '''
+        
+        # in_channels: number of channels in the input data 
+        # out_channels: number of channels produced by the convolution
+        # num_partitions = 3 (root, centripetal, centrifugal)
+        
         super().__init__()
 
         self.out_channels = out_channels
@@ -36,38 +87,14 @@ class SpatialGraphConv(nn.Module):
         )
 
     def forward(self, x, adjacency):
-        '''
-            x shape [B, C, T, V]
-                where:
-                    B = Batch size
-                    C = 3 (normalised_X_coordinate, normalised_Y_coordinate, confidence)
-                    T = 150 (number of frames)
-                    V = 17 (number of keypoints)
-
-            adjacency shape [K, V, V]        
-                where:
-                    k = 3 (number of partitions)
-                    V = 17 (number of keypoints)
-            
-            
-            returns shape [B, C_out, T, V]
-                where:
-                    B = Batch size
-                    C_out = out_channels
-                    T = 150 (number of frames)
-                    V = 17 (number of keypoints)
-        '''
+        # x shape [B, C, T, V]
+        # adjacency shape [3, V, V]
+        # returns [B, out_channels, T, V]
 
         x = self.channel_transform(x) # [B, K*C_out, T, V]
         B, _, T, V = x.shape
 
-        x = x.reshape(
-            B,
-            self.num_partitions,
-            self.out_channels, 
-            T, 
-            V
-        )
+        x = x.reshape(B, self.num_partitions, self.out_channels, T, V)
 
         # equation 10 in paper
         f_outs = []
@@ -78,7 +105,7 @@ class SpatialGraphConv(nn.Module):
         f_out = sum(f_outs)
 
         return f_out
-
+# OLD ------------------------------------------------------------------------------------------------------
 class STGCNBlock(nn.Module):
     def __init__(self,
                 in_channels, 
@@ -151,30 +178,91 @@ class STGCNBlock(nn.Module):
         x = self.relu(x)
         return x
 
-class MaskedBatchNorm(nn.BatchNorm1d):
-    '''
-    computes batch norm statistics from just the non-zero padded tracks
-    '''
+# ------------------------------------------------------------------------------------------------
 
-    def forward(self, x, mask=None):
-        '''
-            x: [B*M, V*C, T]
-            mask: [B*M]
-        '''
+class STGCNBlock(nn.Module):
+    def __init__(self,
+                in_channels, 
+                out_channels, 
+                num_partitions=3,
+                temporal_kernel_size=9, 
+                stride=1, 
+                dropout=0, 
+                residual=True,
+            ):
+        super().__init__()
 
-        if mask is None or not self.training: # dont update statistics if not training
-            return super().forward(x)
+        if temporal_kernel_size % 2 == 0:
+            raise ValueError("temporal_kernel_size must be odd") # so there are an even number of frames before and after
+        
+        temporal_padding = (temporal_kernel_size - 1) // 2
 
-        real = x[mask]
-        batch_mean = real.mean(dim=(0,2))
-        batch_var = real.var(dim=(0,2), unbiased=False)
+        self.spatial_graph_conv = SpatialGraphConv(
+            in_channels=in_channels,
+            out_channels=out_channels,
+            num_partitions=num_partitions
+        )
 
-        with torch.no_grad():
-            self.running_mean = (1 - self.momentum) * self.running_mean + self.momentum * batch_mean
-            self.running_var = (1 - self.momentum) * self.running_var + self.momentum * batch_var
+        self.bn1 = MaskedBatchNorm2d(out_channels)
 
-        # set training to false because we've already computed running mean/var
-        return F.batch_norm(x, batch_mean, batch_var, self.weight, self.bias, training=False, eps=self.eps)
+        self.temporal_conv = nn.Sequential(
+            nn.ReLU(inplace=True), 
+            nn.Conv2d(
+                in_channels=out_channels, 
+                out_channels=out_channels,
+                kernel_size=(temporal_kernel_size, 1),
+                stride=(stride, 1), 
+                padding=(temporal_padding, 0),
+                bias=False
+            ),
+        )
+
+        self.bn2 = MaskedBatchNorm2d(out_channels)
+        self.dropout = nn.Dropout(dropout)
+
+        self.residual = self._build_residual_connection(
+            in_channels=in_channels, 
+            out_channels=out_channels, 
+            stride=stride, 
+            residual=residual
+        )
+
+        self.relu = nn.ReLU(inplace=True)
+
+    def _residual_fn(self, x, mask=None):
+        x = self.residual_conv(x)
+        x = self.residual_bn(x, mask=mask)
+        return x
+
+
+    def _build_residual_connection(self, in_channels, out_channels, stride, residual):
+        if not residual:
+            return lambda x, mask=None: 0
+        elif (in_channels == out_channels) and (stride == 1): # tensor shape is the same so input can be added directly
+            return lambda x, mask=None: x 
+        else:
+            self.residual_conv = nn.Conv2d(
+                in_channels=in_channels, 
+                out_channels=out_channels, 
+                kernel_size=1, 
+                stride=(stride, 1), 
+                bias=False
+            )
+            self.residual_bn = MaskedBatchNorm2d(out_channels)
+            return self._residual_fn
+
+    def forward(self, x, adjacency, mask=None):
+        residual_output = self.residual(x, mask=mask)
+        x = self.spatial_graph_conv(x, adjacency)
+
+        x = self.bn1(x, mask=mask)
+        x = self.temporal_conv(x)
+        x = self.bn2(x, mask=mask)
+        x = self.dropout(x)
+
+        x = x + residual_output
+        x = self.relu(x)
+        return x
 
 class STGCN(nn.Module):
     def __init__(self,
@@ -193,8 +281,7 @@ class STGCN(nn.Module):
 
         adjacency = torch.as_tensor(adjacency, dtype=torch.float32)
         self.register_buffer("adjacency", adjacency)
-        #self.data_batch_norm = nn.BatchNorm1d(in_channels * num_joints) # normalise each joint-channel feature across the batch and time (3*17 = 51 independent normalisations)
-        self.data_batch_norm=MaskedBatchNorm(in_channels * num_joints)
+        self.data_batch_norm=MaskedBatchNorm1d(in_channels * num_joints)
         self.people_aggregation = people_aggregation
 
         self.stgcn_blocks = nn.ModuleList([
@@ -220,15 +307,7 @@ class STGCN(nn.Module):
         self.classifier = nn.Conv2d(in_channels=256, out_channels=2, kernel_size=1)
 
     def forward(self, x):
-        '''
-        x shape: [B, C, T, V, M]
-        where:
-            B = Batch size
-            C = input channels -> (X, Y, Confidence)
-            T = Frames -> 150
-            V = Joints -> 17
-            M = people
-        '''
+        # x shape: [B, C, T, V, M]
 
         B, C, T, V, M = x.shape
 
@@ -246,16 +325,18 @@ class STGCN(nn.Module):
 
         for block, importance in zip(self.stgcn_blocks, self.edge_importance):
             weighted_adjacency = self.adjacency * importance 
-            x = block(x, weighted_adjacency)
+            x = block(x, weighted_adjacency, mask=presence_flat) 
 
-        x = F.avg_pool2d(x, x.size()[2:])
+        # x = [B*M, 256, 38, 17]
+    
+        x = F.avg_pool2d(x, x.size()[2:]) # [B*M, 256, 1, 1]
         x = x.view(B, M, 256)
 
         if self.people_aggregation == "masked_mean":
-            mask = presence.unsqueeze(-1) # (B, M, 1)
-            summed = (x * mask).sum(dim=1) # (B, 256)
-            count = mask.sum(dim=1).clamp(min=1.0) # (B, 1)
-            x = summed / count
+            mask = presence.unsqueeze(-1) # [B, M, 1]
+            summed = (x * mask).sum(dim=1) # [B, 256]
+            count = mask.sum(dim=1).clamp(min=1.0) # [B, 1]
+            x = summed / count # [B, 256]
 
         elif self.people_aggregation == "max":
             # push absent people to -inf so they never win the max
@@ -268,9 +349,9 @@ class STGCN(nn.Module):
             raise ValueError("people_aggregation must be 'masked_mean' or 'max'")
 
 
-        x = x.view(B, x.size(1), 1, 1)
-        x = self.classifier(x)
-        x = x.view(B, -1)
+        x = x.view(B, x.size(1), 1, 1) # [B, 256, 1, 1]
+        x = self.classifier(x) # [B, 2, 1, 1]
+        x = x.view(B, -1) # [B, 2]
 
         return x
 

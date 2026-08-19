@@ -80,28 +80,28 @@ class SkeletonGraph:
 
         self.A = self._build_adjacency_matrix_with_spatial_partitioning()
 
-    def _symmetric_normalise_adjacency_matrix(self, adjacency_matrix):
-        '''
-        A_hat = D^(-1/2) @ A @ D^(-1/2)
+    def _symmetric_normalise_adjacency_matrix(self, full_adjacency):
+        # full_adjacency shape [17, 17]
+        # A_hat = D^(-1/2) @ A @ D^(-1/2)
+        # paper states symmetric normalisation while released implementation uses column normalisation
 
-        paper states symmetric normalisation while released implementation uses column normalisation
-        '''
-
-        degree = adjacency_matrix.sum(dim=1)
+        degree = full_adjacency.sum(dim=1)
         inverse_sqrt_degree = torch.zeros_like(degree)
         non_zero = degree > 0
         inverse_sqrt_degree[non_zero] = degree[non_zero].pow(-0.5)
         degree_matrix = torch.diag(inverse_sqrt_degree)
 
-        return degree_matrix @ adjacency_matrix @ degree_matrix
+        return degree_matrix @ full_adjacency @ degree_matrix
 
-    def _column_normalise_adjacency_matrix(self, adjacency_matrix):
-        degree = adjacency_matrix.sum(dim=0)
+    def _column_normalise_adjacency_matrix(self, full_adjacency):
+        # full_adjacency shape [17, 17]
+
+        degree = full_adjacency.sum(dim=0) # sum the columns (how many connections each joint has)
         inverse_degree = torch.zeros_like(degree)
         non_zero = degree > 0 
-        inverse_degree[non_zero] = 1 / degree[non_zero]
-        degree_matrix = torch.diag(inverse_degree)
-        return adjacency_matrix @ degree_matrix
+        inverse_degree[non_zero] = 1 / degree[non_zero] # calculate the reciprocal
+        degree_matrix = torch.diag(inverse_degree) # convert to diagonal matrix D^-1
+        return full_adjacency @ degree_matrix # A*D^-1
 
     def _normalise_adjacency_matrix(self, adjacency_matrix):
         if self.normalisation == "column":
@@ -112,13 +112,11 @@ class SkeletonGraph:
             raise ValueError("normalisation must be column or symmetric")
 
     def _build_adjacency_matrix_with_spatial_partitioning(self):
-        '''
-        return adjacency matrix: [3, 17, 17]
+        # return adjacency matrix: [3, 17, 17]
+        # root: self-connections -> rj = ri
+        # centipetal: neighbouring joint is closer to the center of gravity -> rj < ri
+        # centrifugal: neighbouting joint is farther from the center of gravity -> rj > ri
 
-        root: self-connections -> rj = ri
-        centipetal: neighbouring joint is closer to the center of gravity -> rj < ri
-        centrifugal: neighbouting joint is farther from the center of gravity -> rj > ri
-        '''
         root = torch.zeros(self.num_joints, self.num_joints)
         centripetal = torch.zeros(self.num_joints, self.num_joints)
         centrifugal = torch.zeros(self.num_joints, self.num_joints)

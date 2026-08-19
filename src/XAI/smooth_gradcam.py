@@ -2,7 +2,7 @@ import torch
 import torch.nn.functional as F
 
 class SmoothGradCAM:
-    def __init__(self, model, target_layer, num_samples=20, noise_std=0.05, normalisation_mode="per_frame", noise_mode="per_frame"):
+    def __init__(self, model, target_layer, num_samples=50, noise_std=0.2, normalisation_mode="per_frame", noise_mode="per_frame"):
         self.model = model
         self.target_layer = target_layer
         self.num_samples = num_samples
@@ -53,16 +53,10 @@ class SmoothGradCAM:
         B, T, C, H, W = input_tensor.shape
 
         if self.noise_mode == "per_frame":
-            noise = torch.randn(
-                B, T, C, H, W, 
-                device=input_tensor.device, 
-            ) * self.noise_std
+            noise = torch.randn(B, T, C, H, W, device=input_tensor.device) * self.noise_std
         
         elif self.noise_mode == "per_video":
-            noise = torch.randn(
-                B, 1, C, H, W, 
-                device=input_tensor.device, 
-            ) * self.noise_std
+            noise = torch.randn(B, 1, C, H, W, device=input_tensor.device) * self.noise_std
         else:
             raise ValueError("noise_mode must be either 'per_frame' OR 'per_video'")
 
