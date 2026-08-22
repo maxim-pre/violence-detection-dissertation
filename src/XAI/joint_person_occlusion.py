@@ -73,9 +73,15 @@ class JointOcclusion:
         joint_importance = torch.zeros(T, V, M, device=input_tensor.device)
         person_importance = torch.zeros(T, M, device=input_tensor.device)
 
+        # calculate how many people are actually present 
+        has_confidence = input_tensor[0, 2] > 0 # shape [T, V, M]
+        present_in_frame = has_confidence.any(dim=1) # shape [T, M]
+        presence = present_in_frame.any(dim=0) # shape [M]
+        present_people = [person for person in range(M) if presence[person]]
+
         # joint importance
         for frame_index in range(T):
-            for person_index in range(M):
+            for person_index in present_people:
                 for joint_index in range(V):
                     occluded_input = self._occlude_joint(input_tensor, frame_index, joint_index, person_index) # occlude the joint over temporal window
                     _, occluded_probability = self._predict(occluded_input) # calculate prediction confidence of occluded input
@@ -84,7 +90,7 @@ class JointOcclusion:
 
         # person importance
         for frame_index in range(T):
-            for person_index in range(M):
+            for person_index in present_people:
                 occluded_input = self._occlude_person(input_tensor, frame_index, person_index)
                 _, occluded_probability = self._predict(occluded_input)
                 occluded_target_probability = occluded_probability[0, target_class]

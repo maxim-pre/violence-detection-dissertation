@@ -91,4 +91,4 @@ class GradCAM:
         cam = self._normalise(cam)
         cam = cam.view(B, T, H, W)
 
-        return cam.detach(), logits.detach()
+        return cam.detach()

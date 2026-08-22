@@ -127,4 +127,4 @@ class SmoothGradCAM:
         smooth_cam = self._normalise(smooth_cam)
         smooth_cam = smooth_cam.view(B, T, H, W)
 
-        return smooth_cam.detach(), logits.detach()
+        return smooth_cam.detach()

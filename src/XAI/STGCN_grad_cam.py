@@ -90,7 +90,7 @@ class STGCNGradCam:
         cam = cam.permute(1, 2, 0) # shape [T, V, M]
 
         cam = self._normalise(cam)
-        return cam.detach(), logits.detach()
+        return cam.detach()
 
 
 

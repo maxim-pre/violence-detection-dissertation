@@ -21,6 +21,13 @@ venv/
 # Logs
 *.log
 
+# notebooks
+*.ipynb
+
+#pdfs
+*.pdf
+*.png
+
 # Training outputs
 checkpoints/
 logs/

@@ -88,10 +88,10 @@ class SpatialGraphConv(nn.Module):
 
     def forward(self, x, adjacency):
         # x shape [B, C, T, V]
-        # adjacency shape [3, V, V]
+        # adjacency shape [K, V, V]
         # returns [B, out_channels, T, V]
 
-        x = self.channel_transform(x) # [B, K*C_out, T, V]
+        x = self.channel_transform(x) # [B, K*out_channels, T, V]
         B, _, T, V = x.shape
 
         x = x.reshape(B, self.num_partitions, self.out_channels, T, V)

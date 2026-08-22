@@ -110,7 +110,7 @@ class FullGradCAM:
         final_cam = self._normalise(final_cam)
         final_cam = final_cam.reshape(B,T,H,W)
 
-        return final_cam.detach(), logits.detach(), [cam.detach() for cam in layer_cams]
+        return final_cam.detach()
 
 
             

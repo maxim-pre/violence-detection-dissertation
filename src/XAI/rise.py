@@ -58,13 +58,7 @@ class RISE:
         # shape [num_masks, 36, 256, 256]
         enlarged_masks = enlarged_masks.squeeze(1)
 
-        masks = torch.empty(
-            number_of_masks, 
-            T,
-            H, 
-            W, 
-            device=device
-        )
+        masks = torch.empty(number_of_masks, T, H, W, device=device)
 
         # now cropping to shape [32, 224, 244]
         for i in range(number_of_masks):
@@ -140,12 +134,7 @@ class RISE:
         print(f"saliency_map shape: {saliency_map.shape}")
         normalised_saliency_map = self._normalise_saliency_map(saliency_map) # [32, 224, 224]
 
-        return (
-            saliency_map.detach(),
-            normalised_saliency_map.detach(),
-            logits.detach(),
-            target_class
-        )
+        return normalised_saliency_map.detach()
 
 class SkeletonRise:
     def __init__(self, model, num_masks=8000, mask_batch_size=8, t=17, normalisation_mode="per_frame"):
@@ -279,9 +268,5 @@ class SkeletonRise:
         saliency_map = saliency_accumulator/(self.mask_probability * self.num_masks)
         print(f"saliency_map shape: {saliency_map.shape}")
         normalised_saliency_map = self._normalise_saliency_map(saliency_map) # [150, 17, 4]
-        return (
-            saliency_map.detach(),
-            normalised_saliency_map.detach(),
-            logits.detach(),
-            target_class
-        )
+
+        return normalised_saliency_map.detach()
