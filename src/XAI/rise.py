@@ -3,7 +3,7 @@ import torch.nn.functional as F
 import math
 
 class RISE:
-    def __init__(self, model, num_masks=8000, mask_batch_size=8, t=8, h=7, normalisation_mode="per_frame"):
+    def __init__(self, model, num_masks=8000, mask_batch_size=16, t=8, h=7, normalisation_mode="per_video"):
         self.model = model
         self.num_masks = num_masks
         self.mask_batch_size = mask_batch_size
@@ -109,13 +109,7 @@ class RISE:
             current_batch_size = min(self.mask_batch_size, self.num_masks - masks_processed)
 
             # shape [current_batch_size, 32, 224, 224]
-            masks = self._generate_masks(
-                number_of_masks=current_batch_size,
-                T=T, 
-                height=H, 
-                width=W,
-                device=input_tensor.device
-            )
+            masks = self._generate_masks(number_of_masks=current_batch_size, T=T, H=H, W=W, device=input_tensor.device)
 
             # [1,32,3,224,224] * [batch_size,32,1,224,224] = [batch_size,32,3,224,224]
             masked_videos = input_tensor * masks.unsqueeze(2) 
@@ -128,16 +122,14 @@ class RISE:
             weighted_masks = target_scores[:, None, None, None] * masks
             saliency_accumulator += weighted_masks.sum(dim=0)
             masks_processed += current_batch_size
-            print(f"processed {masks_processed}/{self.num_masks} masks")
         
         saliency_map = saliency_accumulator/(self.mask_probability * self.num_masks)
-        print(f"saliency_map shape: {saliency_map.shape}")
         normalised_saliency_map = self._normalise_saliency_map(saliency_map) # [32, 224, 224]
 
         return normalised_saliency_map.detach()
 
 class SkeletonRise:
-    def __init__(self, model, num_masks=8000, mask_batch_size=8, t=17, normalisation_mode="per_frame"):
+    def __init__(self, model, num_masks=8000, mask_batch_size=16, t=17, normalisation_mode="per_video"):
 
         self.model = model
         self.num_masks = num_masks
@@ -154,13 +146,7 @@ class SkeletonRise:
         C_t = math.ceil(T / self.t) # 150 / 17 = 9
 
         # shape: [num_masks, 17]
-        coarse_masks = (
-            torch.rand(
-                number_of_masks, 
-                self.t, 
-                device=device
-            ) < self.mask_probability
-        ).float()
+        coarse_masks = (torch.rand(number_of_masks, self.t, device=device) < self.mask_probability).float()
 
         # shape: [num_masks, 1, 17]
         coarse_masks = coarse_masks.unsqueeze(1)
@@ -188,22 +174,16 @@ class SkeletonRise:
             temporal_mask = self._generate_temporal_masks(number_of_masks, T, device) # which frames to apply joint mask
 
             # shape [num_masks, 17]
-            joint_mask = (
-                torch.rand(number_of_masks, num_joints, device=device) < self.mask_probability
-            ).float()
-
+            joint_mask = (torch.rand(number_of_masks, num_joints, device=device) < self.mask_probability).float()
             joint_mask = joint_mask.unsqueeze(1) # shape [num_masks, 1, 17]
             temporal_mask = temporal_mask.unsqueeze(2) # shape [num_masks, 150, 1]
-
             masks[:, :, :, person] = temporal_mask * joint_mask # shape [num_masks, 150, 17]
-
 
         return masks # shape [num_masks, 150, 17, 4]
 
     def _normalise_saliency_map(self, saliency):
-        '''
-            saliency shape: [150, 17, 4]
-        '''
+        # saliency shape: [150, 17, 4]
+        
         if self.normalisation_mode == "per_frame":
             saliency_min = saliency.flatten(1).min(dim=1).values.view(-1, 1, 1)
             saliency_max = saliency.flatten(1).max(dim=1).values.view(-1, 1, 1)
@@ -262,11 +242,9 @@ class SkeletonRise:
             weighted_masks = target_scores[:, None, None, None] * masks
             saliency_accumulator += weighted_masks.sum(dim=0)
             masks_processed += current_batch_size
-            print(f"processed {masks_processed}/{self.num_masks} masks")
 
 
         saliency_map = saliency_accumulator/(self.mask_probability * self.num_masks)
-        print(f"saliency_map shape: {saliency_map.shape}")
         normalised_saliency_map = self._normalise_saliency_map(saliency_map) # [150, 17, 4]
 
         return normalised_saliency_map.detach()

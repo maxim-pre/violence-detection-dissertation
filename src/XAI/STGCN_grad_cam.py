@@ -2,7 +2,7 @@ import torch
 import torch.nn.functional as F
 
 class STGCNGradCam:
-    def __init__(self, model, target_layer, normalisation_mode="per_frame"):
+    def __init__(self, model, target_layer, normalisation_mode="per_video"):
         self.model = model 
         self.target_layer = target_layer
         self.gradients = None
@@ -26,13 +26,7 @@ class STGCNGradCam:
         self.backward_hook.remove()
 
     def _normalise(self, cam):
-        '''
-        heatmap: [T, V, M]
-            where:
-                T = num_frames
-                V = num_joints
-                M = num_people
-        '''
+        # saliency: [150, 17, 4]
 
         if self.normalisation_mode == "per_frame":
             cam_min = cam.flatten(1).min(dim=1).values.view(-1, 1, 1)
@@ -47,13 +41,8 @@ class STGCNGradCam:
         return cam
     
     def generate_heatmap(self, input_tensor, target_class=None):
-        '''
-        input_tensor: [1, C, T, V, M]
+        #input_tensor: [1, 3, 150, 17, 4]
 
-        returns:
-            cam: [T, V, M]
-            logits: [1, num_classes]
-        '''
         B, C, T, V, M = input_tensor.shape
 
         if B != 1:
@@ -79,12 +68,7 @@ class STGCNGradCam:
         cam = cam.unsqueeze(1) # shape [M, 1, reduced_time, V]
 
         # upsample to original T (shape [M, 1, T, V])
-        cam = F.interpolate( 
-            cam, 
-            size=(T, V), 
-            mode="bilinear", 
-            align_corners=False,
-        )
+        cam = F.interpolate(cam, size=(T, V), mode="bilinear", align_corners=False)
 
         cam = cam.squeeze(1) # shape [M, T, V]
         cam = cam.permute(1, 2, 0) # shape [T, V, M]

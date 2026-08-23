@@ -109,32 +109,32 @@ class CNNLSTMV3(nn.Module):
 
         # extract CNN feature maps
         features = self.cnn(x)
-        # shape: (128, 1280, 7, 7)
+        # shape: (B*T, 1280, 7, 7)
 
         features = self.channel_reduce(features)
-        # shape: (128, 64, 7, 7)
+        # shape: (B*T, 64, 7, 7)
 
         _, C_feat, H_feat, W_feat = features.shape
 
         # restore video structure
         features = features.view(B, T, C_feat, H_feat, W_feat)
-        # shape: (4, 32, 64, 7, 7)
+        # shape: (B, 32, 64, 7, 7)
 
         outputs = self.sepconvlstm(features)
-        # shape: (4, 32, 128, 7, 7)
+        # shape: (B, 32, 128, 7, 7)
 
         last_hidden = outputs[:, -1]
-        # shape: (4, 128, 7, 7)
+        # shape: (B, 128, 7, 7)
 
         pooled = self._pool(last_hidden)
 
         # "max_flatten": (B, hidden_channels * flatten_pool_size * flatten_pool_size)
         # others: (B, hidden_channels)
         pooled = torch.flatten(pooled, start_dim=1)
-        # shape: (4, 128)
+        # shape: (B, 128)
 
         logits = self.classifier(pooled)
-        # shape: (4, 2)
+        # shape: (B, 2)
 
         return logits
 

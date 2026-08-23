@@ -17,6 +17,11 @@ POSE_DATASET_ROOT_OCSORT = Path("/homes/mp2940/demo/datasets/rwf-2000/pose_data_
 GAMMA_POSE_DATASET_ROOT = Path("/homes/mp2940/demo/datasets/rwf-2000/pose_data_gamma_067")
 COMBINED_POSE_DATASET_ROOT = Path("/homes/mp2940/demo/datasets/rwf-2000/pose_data_combined")
 
+# XAI results paths
+CNN_LSTM_XAI_RESULTS = Path("/homes/mp2940/demo/datasets/xai_results/cnn_lstm")
+STGCN_XAI_RESULTS = Path("/homes/mp2940/demo/datasets/xai_results/stgcn")
+
+
 CHECKPOINT_DIR = Path("/homes/mp2940/violence-detection-dissertation/checkpoints")
 
 DEFAULT_AUGMENTATION_PARAMS = {

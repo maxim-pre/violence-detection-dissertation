@@ -3,7 +3,7 @@ import torch.nn.functional as F
 
 
 class FullGradCAM:
-    def __init__(self, model, target_layers, normalisation_mode="per_frame"):
+    def __init__(self, model, target_layers, normalisation_mode="per_video"):
         self.model = model
         self.target_layers = target_layers 
         self.normalisation_mode = normalisation_mode

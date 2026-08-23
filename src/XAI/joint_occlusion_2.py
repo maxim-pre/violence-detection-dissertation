@@ -2,13 +2,17 @@ import torch
 import torch.nn.functional as F
 
 class JointOcclusion:
-    def __init__(self, model, temporal_window_size=9, use_temporal_window=True):
+    def __init__(self, model, temporal_window_size=9, use_temporal_window=True, normalisation_mode="per_video"):
         self.model = model 
         self.temporal_window_size = temporal_window_size
         self.model.eval()
         self.use_temporal_window = use_temporal_window
+        self.normalisation_mode=normalisation_mode
 
         assert self.temporal_window_size % 2 != 0
+
+        if self.normalisation_mode not in ["per_frame", "per_video"]:
+            raise ValueError("normalisation_mode must be either 'per_frame' OR 'per_video'")
 
     def _predict(self, input_tensor):
         # input tensor [1, 3, 150, 17, 4]
@@ -37,6 +41,22 @@ class JointOcclusion:
             occluded = input_tensor.clone()
             occluded[:, :, frame_index, joint_index, person_index] = 0
         return occluded
+
+    def _normalise_saliency_map(self, saliency):
+        '''
+            saliency shape: [150, 17, 4]
+        '''
+        if self.normalisation_mode == "per_frame":
+            saliency_min = saliency.flatten(1).min(dim=1).values.view(-1, 1, 1)
+            saliency_max = saliency.flatten(1).max(dim=1).values.view(-1, 1, 1)
+        elif self.normalisation_mode == "per_video":
+            saliency_min = saliency.min()
+            saliency_max = saliency.max()
+        else:
+            raise ValueError("normalisation_mode must be either 'per_frame' OR 'per_video'")
+        
+        saliency = (saliency - saliency_min) / (saliency_max - saliency_min + 1e-8)
+        return saliency
 
     def generate_heatmap(self, input_tensor, target_class=None):
         # input tensor [1, 3, 150, 17, 4]
@@ -68,5 +88,8 @@ class JointOcclusion:
                         _, occluded_probability = self._predict(occluded_input) # calculate prediction confidence of occluded input
                         occluded_target_probability = occluded_probability[0, target_class]
                         joint_importance[frame_index, joint_index, person_index] = baseline_target_probability - occluded_target_probability # save prediction confidence 
+
+            joint_importance = F.relu(joint_importance)
+            joint_importance = self._normalise_saliency_map(joint_importance)
 
             return joint_importance.detach()

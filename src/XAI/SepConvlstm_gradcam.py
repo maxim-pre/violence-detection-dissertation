@@ -1,7 +1,7 @@
 import torch 
 import torch.nn.functional as F
 
-class GradCAM:
+class SepConvLSTMGradCam:
     def __init__(self, model, target_layer, normalisation_mode="per_video"):
         self.model = model
         self.target_layer = target_layer
@@ -62,24 +62,24 @@ class GradCAM:
         score = logits[0, target_class]
         score.backward()
 
-        # activation: [T, 1280, 7, 7]
-        # gradient: [T, 1280, 7, 7]
+        # activation: [1, 32, hidden_channels, 7, 7]
+        # gradient: [1, 32, hidden_channels, 7, 7]
         activation = self.activations
         gradient = self.gradients
 
-        # weights: [T, 1280, 1, 1]
-        weights = gradient.mean(dim=(2, 3), keepdim=True)
+        # weights: [1, 32, hidden_channels, 1, 1]
+        weights = gradient.mean(dim=(3, 4), keepdim=True)
 
-        # cam: [T, 7, 7]
-        cam = (weights * activation).sum(dim=1)
+        # cam: [1, 32, 7, 7]
+        cam = (weights * activation).sum(dim=2)
 
         cam = F.relu(cam)
 
 
-        #convert to: [T, 1, 7, 7]
-        cam = cam.unsqueeze(1)
+        #convert to: [32, 1, 7, 7]
+        cam = cam.view(B*T, 1, 7, 7)
 
-        # resize heatmaps to the original input size: [B, num_frames, H, W]
+        # resize heatmaps to the original input size: [32, 1, 224, 224]
         cam = F.interpolate(
             cam,
             size=(H, W),

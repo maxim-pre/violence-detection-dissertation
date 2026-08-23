@@ -2,7 +2,7 @@ import torch
 import torch.nn.functional as F
 
 class SmoothGradCAM:
-    def __init__(self, model, target_layer, num_samples=50, noise_std=0.2, normalisation_mode="per_frame", noise_mode="per_frame"):
+    def __init__(self, model, target_layer, num_samples=50, noise_std=0.2, normalisation_mode="per_video", noise_mode="per_frame"):
         self.model = model
         self.target_layer = target_layer
         self.num_samples = num_samples
