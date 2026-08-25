@@ -73,12 +73,19 @@ class RIS_TEST:
         ratio = (a - b) / (a + self.epsilon_min) # deviation from (Agarwal, 2022) - need to add epsilon_min to denominator because skeleton_data contans zeros
         return torch.norm(ratio.flatten(), p=2)
 
-    def evaluate(self, input_tensor, saliency_map, explain_fn, num_perturbations=50):
+    def evaluate(self, input_tensor, saliency_map, explain_fn, num_perturbations=50, max_attempts=200):
 
         target_class = self._get_predicted_class(input_tensor)
         ratios = []
+        attempts = 0 
 
         while len(ratios) < num_perturbations:
+            attempts += 1
+
+            if attempts > max_attempts:
+                # prevent potential infinite loop
+                break
+
             noisy_input = self._get_noisy_input(input_tensor)
             predicted_class = self._get_predicted_class(noisy_input)
 
@@ -91,6 +98,9 @@ class RIS_TEST:
             input_change = torch.clamp(input_change, min=self.epsilon_min) # prevent divide by zero error 
 
             ratios.append((saliency_change/input_change).item())
+
+        if not ratios:
+            return None
 
         return max(ratios)
 
