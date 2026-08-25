@@ -106,7 +106,6 @@ class SmoothGradCAM:
                 cam_accumulator = torch.zeros_like(cam)
             
             cam_accumulator += cam.detach()
-            print(f"processed {i+1}/{self.num_samples}")
         
         # [32, 7, 7]
         smooth_cam = cam_accumulator / self.num_samples

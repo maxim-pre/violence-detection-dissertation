@@ -1,7 +1,7 @@
 import torch
 
 class RIS_TEST:
-    def __init__(self, model, data_type, noise_std=0.01, noise_mode="per_frame", epsilon_min=1e-6, attempts=50, ):
+    def __init__(self, model, data_type, noise_std=0.01, noise_mode="per_video", epsilon_min=1e-6):
         self.model = model 
         self.data_type = data_type
         self.noise_std = noise_std
@@ -13,6 +13,9 @@ class RIS_TEST:
 
         if self.data_type not in ["image", "skeleton"]:
             raise ValueError("data_type must be either 'image' OR 'skeleton'")
+
+        if self.data_type == "skeleton":
+            self.epsilon_min = 1e-3
 
     def _get_predicted_class(self, input_tensor):
         # input_tensor shape:
