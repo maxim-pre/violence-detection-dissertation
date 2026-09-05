@@ -6,6 +6,10 @@ from src.config import POSE_DATASET_ROOT, GAMMA_POSE_DATASET_ROOT, COMBINED_POSE
 from src.rwf2000 import pose_data_to_stgcn_tensor
 import json
 
+#---------
+# NOT USED
+#---------
+
 def score_pose_tensor(tensor):
     # tensor: [3, 150, 17, 4]
     confidence = tensor[2]

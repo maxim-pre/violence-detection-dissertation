@@ -1,6 +1,8 @@
 import torch
 import torch.nn as nn
-
+#---------
+# NOT USED
+#---------
 
 class SeparableConv2d(nn.Module):
     def __init__(self, in_channels, out_channels, kernel_size=3):
@@ -71,9 +73,6 @@ class SepConvLSTM(nn.Module):
         )
 
     def forward(self, x):
-        """
-        x shape: (B, T, C, H, W)
-        """
         B, T, C, H, W = x.shape
 
         h = torch.zeros(B, self.hidden_channels, H, W, device=x.device)

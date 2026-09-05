@@ -3,6 +3,9 @@ import torch.nn as nn
 from torchvision.models import mobilenet_v2, MobileNet_V2_Weights
 from .sepconv_lstm import SepConvLSTM
 
+#---------
+# NOT USED
+#---------
 
 # this model utilises sepConvLSTM
 class CNNLSTMV2(nn.Module):
@@ -73,16 +76,6 @@ class CNNLSTMV2(nn.Module):
         )
     
     def forward(self, x):
-        '''
-        x shape: (B, T, C, H, W)
-
-        B = batch size
-        T = number of frames
-        C = channels
-        H = height
-        W = width
-
-        '''
 
         B, T, C, H, W = x.shape
 

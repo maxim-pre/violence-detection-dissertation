@@ -281,7 +281,9 @@ class STGCN(nn.Module):
 
 
 
-# not used 
+#---------
+# NOT USED
+#---------
 class STGCNV2(nn.Module):
     def __init__(self,
                  adjacency,
@@ -291,9 +293,6 @@ class STGCNV2(nn.Module):
                  dropout=0.5, 
                  edge_importance_weighting=True,
             ):
-        '''
-        adjacency shape: [K, V, V] wher K
-        '''
         super().__init__()
 
         adjacency = torch.as_tensor(adjacency, dtype=torch.float32)
@@ -323,15 +322,6 @@ class STGCNV2(nn.Module):
         self.classifier = nn.Conv2d(in_channels=192, out_channels=2, kernel_size=1)
 
     def forward(self, x):
-        '''
-        x shape: [B, C, T, V, M]
-        where:
-            B = Batch size
-            C = input channels -> (X, Y, Confidence)
-            T = Frames -> 150
-            V = Joints -> 17
-            M = people
-        '''
 
         B, C, T, V, M = x.shape
         x = x.permute(0, 4, 3, 2, 1).contiguous()

@@ -2,7 +2,7 @@ import torch
 import torch.nn.functional as F
 
 #---------
-# THIS IS ACTUALLY MULTILAYER GRADCAM, BUT I NAMED IT FULLGRADCAM
+# This is actually Multilayer Grad-CAM, but I named it FullGradCAM
 #---------
 class FullGradCAM:
     def __init__(self, model, target_layers, normalisation_mode="per_video"):

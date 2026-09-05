@@ -4,7 +4,10 @@ from torchvision.models import mobilenet_v2, MobileNet_V2_Weights
 from .sepconv_lstm_v2 import SepConvLSTM
 
 
-# this model utilises sepConvLSTM
+#---------
+# FINAL MODEL
+#---------
+
 class CNNLSTMV3(nn.Module):
 
     def __init__(

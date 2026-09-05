@@ -5,6 +5,10 @@ from src.Skeleton_model.yolo_pose_tracking import save_annotated_pose_videos
 from src.rwf2000 import RWF2000PoseDataset, RWF2000Dataset
 from ultralytics import YOLO
 
+#---------
+# NOT USED
+#---------
+
 pose_dataset_root = POSE_DATASET_ROOT
 model_name = "yolo26x-pose"
 

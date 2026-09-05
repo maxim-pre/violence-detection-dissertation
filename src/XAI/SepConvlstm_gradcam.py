@@ -1,6 +1,9 @@
 import torch 
 import torch.nn.functional as F
 
+#---------
+# NOT USED
+#---------
 class SepConvLSTMGradCam:
     def __init__(self, model, target_layer, normalisation_mode="per_video"):
         self.model = model
@@ -28,9 +31,7 @@ class SepConvLSTMGradCam:
         self.backward_hook.remove()
     
     def _normalise(self, cam):
-        '''
-            cam shape: [32, 224, 224] or [batch_size * num_frames, 224, 224] 
-        '''
+
         if self.normalisation_mode == "per_frame":
             cam_min = cam.flatten(1).min(dim=1).values.view(-1, 1, 1)
             cam_max = cam.flatten(1).max(dim=1).values.view(-1, 1, 1)

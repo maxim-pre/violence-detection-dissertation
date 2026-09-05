@@ -1,7 +1,9 @@
 import torch
 import torch.nn as nn
 
-
+#---------
+# FINAL SEPCONVLSTM MODEL
+#---------
 class SeparableConv2d(nn.Module):
     def __init__(self, in_channels, out_channels, kernel_size=3):
         super().__init__()

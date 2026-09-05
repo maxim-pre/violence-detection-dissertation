@@ -2,6 +2,10 @@ import torch
 import torch.nn as nn 
 from torchvision.models import mobilenet_v2, MobileNet_V2_Weights
 
+#---------
+# NOT USED
+#---------
+
 class CNNLSTMV1(nn.Module):
 
     def __init__(
@@ -47,16 +51,6 @@ class CNNLSTMV1(nn.Module):
         )
     
     def forward(self, x):
-        '''
-        x shape: (B, T, C, H, W)
-
-        B = batch size
-        T = number of frames
-        C = channels
-        H = height
-        W = width
-
-        '''
 
         B, T, C, H, W = x.shape
 

@@ -4,10 +4,11 @@ from pathlib import Path
 from tqdm import tqdm
 from src.config import DATASET_ROOT
 
+#---------
+# NOT USED
+#---------
+
 def apply_gamma_correction(frame, gamma=0.67):
-    """
-    Apply gamma correction to an image.
-    """
 
     # Convert pixel values to [0, 1]
     frame = frame.astype(np.float32) / 255.0
@@ -18,9 +19,6 @@ def apply_gamma_correction(frame, gamma=0.67):
     return frame
 
 def create_gamma_corrected_video(input_path, output_path, gamma=0.67):
-    """
-    Create a gamma corrected video from an input video.
-    """
 
     # Open the input video
     cap = cv2.VideoCapture(input_path)
