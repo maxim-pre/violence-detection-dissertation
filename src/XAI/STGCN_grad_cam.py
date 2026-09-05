@@ -26,8 +26,6 @@ class STGCNGradCam:
         self.backward_hook.remove()
 
     def _normalise(self, cam):
-        # saliency: [150, 17, 4]
-
         if self.normalisation_mode == "per_frame":
             cam_min = cam.flatten(1).min(dim=1).values.view(-1, 1, 1)
             cam_max = cam.flatten(1).max(dim=1).values.view(-1, 1, 1)
@@ -58,20 +56,20 @@ class STGCNGradCam:
         score = logits[0, target_class]
         score.backward()
 
-        # shape: [M, laster_layer_out_channels, reduced_time, V]
+        # shape: [4, 256, 38, 17]
         activations = self.activations
         gradients = self.gradients
 
-        weights = gradients.mean(dim=(2, 3), keepdim=True)  # shape: [M, laster_layer_out_channels, 1, 1]
-        cam = (weights * activations).sum(dim=1)  # shape: [M, reduced_time, V]
+        weights = gradients.mean(dim=(2, 3), keepdim=True)  # shape: [4, 256, 1, 1]
+        cam = (weights * activations).sum(dim=1)  # shape: [4, 38, 17]
         cam = F.relu(cam)
-        cam = cam.unsqueeze(1) # shape [M, 1, reduced_time, V]
+        cam = cam.unsqueeze(1) # shape [4, 1, 38, 17]
 
-        # upsample to original T (shape [M, 1, T, V])
+        # upsample to original T (shape [4, 1, 150, 17])
         cam = F.interpolate(cam, size=(T, V), mode="bilinear", align_corners=False)
 
-        cam = cam.squeeze(1) # shape [M, T, V]
-        cam = cam.permute(1, 2, 0) # shape [T, V, M]
+        cam = cam.squeeze(1) # shape [4, 150, 17]
+        cam = cam.permute(1, 2, 0) # shape [150, 17, 4]
 
         cam = self._normalise(cam)
         return cam.detach()

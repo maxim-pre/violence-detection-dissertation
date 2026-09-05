@@ -144,7 +144,7 @@ DEFAULT_TRAINING_PARAMS_V4= {
     "scheduler_patience": 5,
     "epochs": 75,
     "early_stopping_patience": 8,
-    "weight_decay": 1e-5,
+    "weight_decay": 2e-5,
     "amsgrad": False,
     "label_smoothing": 0.1,
 

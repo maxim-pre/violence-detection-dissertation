@@ -136,12 +136,7 @@ class RWF2000Dataset(Dataset):
 
     def _sample_frame_indices(self, total_frames, frames_to_sample):
         # Sample frame indices uniformly across the video
-        return np.linspace(
-            0,
-            total_frames - 1,
-            frames_to_sample,
-            dtype=int
-        )
+        return np.linspace(0, total_frames - 1, frames_to_sample, dtype=int)
 
     def _load_video(self, video_path):
         cap = cv2.VideoCapture(str(video_path))
@@ -157,9 +152,7 @@ class RWF2000Dataset(Dataset):
         for idx in frame_indices:
             cap.set(cv2.CAP_PROP_POS_FRAMES, idx)
             success, frame = cap.read()
-
-            if not success:
-                continue
+            if not success: continue
 
             frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB) # opencv loads in BGR format, convert to RGB for pytorch
 
@@ -172,7 +165,7 @@ class RWF2000Dataset(Dataset):
 
         cap.release()
 
-        if self.return_rgb_frames:
+        if self.return_rgb_frames: # just used for plotting
             rbg_frames = []
 
             for frame in frames:
@@ -322,10 +315,6 @@ class RWF2000PoseDataset(Dataset):
         return len(self.samples)
 
     def _augment_pose(self, tensor):
-        """
-        tensor shape: [3, T, V, M]
-        channels: x, y, confidence
-        """
 
         tensor = tensor.clone()
         C, T, V, M = tensor.shape
@@ -336,7 +325,7 @@ class RWF2000PoseDataset(Dataset):
             if person_pose[2].sum() == 0: # continue if no person exists
                 continue
 
-            # pose sequence has to be numpy array with format (T, V, C)
+            # pose sequence has to be numpy array with format [T, V, C]
             keypoints = person_pose.permute(1, 2, 0).cpu().numpy().copy()
 
             # Skelbumentations expects a mask indicating joints that are already missing
@@ -361,8 +350,7 @@ class RWF2000PoseDataset(Dataset):
             track_score_mode=self.score_mode,
         )
 
-        if self.augment:
-            tensor = self._augment_pose(tensor)
+        if self.augment: tensor = self._augment_pose(tensor)
 
         label = torch.tensor(label, dtype=torch.long)
 

@@ -7,9 +7,7 @@ from src.rwf2000 import pose_data_to_stgcn_tensor
 import json
 
 def score_pose_tensor(tensor):
-    '''
-    tensor: [3, T, V, M]
-    '''
+    # tensor: [3, 150, 17, 4]
     confidence = tensor[2]
     visible = confidence > 0
 

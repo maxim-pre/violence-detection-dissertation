@@ -9,11 +9,11 @@ class CNNLSTMV3(nn.Module):
 
     def __init__(
             self,
-            hidden_channels = 128, 
-            reduced_channels = 64,
+            hidden_channels = 64, 
+            reduced_channels = 96,
             classifier_hidden_size = 128,
             num_classes = 2,
-            dropout = 0.4, 
+            dropout = 0.35, 
             cnn_cutoff = 19,
             cnn_unfreeze_from=None, 
             pooling_mode="double", # "double" or "avg" or "max" or "max_flatten"
@@ -29,9 +29,10 @@ class CNNLSTMV3(nn.Module):
 
         classifier_input_size = hidden_channels
 
-        # Truncate MobileNet feature extractor
+        # Truncate MobileNet feature extractor (was not used in final model)
         self.cnn = nn.Sequential(*mobilenet.features[:cnn_cutoff])
 
+        # cnn was kept frozen for the final model
         if cnn_unfreeze_from is None:
             for param in self.cnn.parameters():
                 param.requires_grad = False
@@ -91,16 +92,7 @@ class CNNLSTMV3(nn.Module):
         return x
     
     def forward(self, x):
-        '''
-        x shape: (B, T, C, H, W)
-
-        B = batch size
-        T = number of frames
-        C = channels
-        H = height
-        W = width
-
-        '''
+        # input shape: [B, 32, 3, 224, 224]
 
         B, T, C, H, W = x.shape
 
@@ -109,32 +101,30 @@ class CNNLSTMV3(nn.Module):
 
         # extract CNN feature maps
         features = self.cnn(x)
-        # shape: (B*T, 1280, 7, 7)
+        # shape: [B*T, 1280, 7, 7]
 
         features = self.channel_reduce(features)
-        # shape: (B*T, 64, 7, 7)
+        # shape: [B*T, 96, 7, 7]
 
         _, C_feat, H_feat, W_feat = features.shape
 
         # restore video structure
         features = features.view(B, T, C_feat, H_feat, W_feat)
-        # shape: (B, 32, 64, 7, 7)
+        # shape: [B, 32, 96, 7, 7]
 
         outputs = self.sepconvlstm(features)
-        # shape: (B, 32, 128, 7, 7)
+        # shape: [B, 32, 64, 7, 7]
 
         last_hidden = outputs[:, -1]
-        # shape: (B, 128, 7, 7)
+        # shape: [B, 64, 7, 7]
 
         pooled = self._pool(last_hidden)
 
-        # "max_flatten": (B, hidden_channels * flatten_pool_size * flatten_pool_size)
-        # others: (B, hidden_channels)
         pooled = torch.flatten(pooled, start_dim=1)
-        # shape: (B, 128)
+        # shape: [B, 64]
 
         logits = self.classifier(pooled)
-        # shape: (B, 2)
+        # shape: [B, 2]
 
         return logits
 

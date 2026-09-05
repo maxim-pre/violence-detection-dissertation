@@ -1,7 +1,9 @@
 import torch 
 import torch.nn.functional as F
 
-
+#---------
+# THIS IS ACTUALLY MULTILAYER GRADCAM, BUT I NAMED IT FULLGRADCAM
+#---------
 class FullGradCAM:
     def __init__(self, model, target_layers, normalisation_mode="per_video"):
         self.model = model
@@ -45,9 +47,6 @@ class FullGradCAM:
             hook.remove()
     
     def _normalise(self, cam):
-        '''
-            cam shape: [32, 7, 7] or [batch_size * num_frames, 7, 7] 
-        '''
         if self.normalisation_mode == "per_frame":
             cam_min = cam.flatten(1).min(dim=1).values.view(-1, 1, 1)
             cam_max = cam.flatten(1).max(dim=1).values.view(-1, 1, 1)
@@ -85,7 +84,7 @@ class FullGradCAM:
         layer_cams = []
 
         for layer_index in range(len(self.target_layers)):
-            activation = self.activations[layer_index]
+            activation = self.activations[layer_index] 
             gradient = self.gradients[layer_index]
             weights = gradient.mean(dim=(2, 3), keepdim=True)
             layer_cam = (weights * activation).sum(dim=1)
@@ -98,7 +97,7 @@ class FullGradCAM:
                 mode="bilinear",
                 align_corners=False
             )
-            layer_cam = layer_cam.squeeze(1)
+            layer_cam = layer_cam.squeeze(1) # [32, 224, 224]
             layer_cam = layer_cam.view(B,T,H,W)
             layer_cams.append(layer_cam)
         

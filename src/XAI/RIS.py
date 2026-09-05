@@ -1,12 +1,13 @@
 import torch
 
 class RIS_TEST:
-    def __init__(self, model, data_type, noise_std=0.01, noise_mode="per_video", epsilon_min=1e-6):
+    def __init__(self, model, data_type, noise_std=0.01, noise_mode="per_video", epsilon_min=1e-6, max_attempts=200):
         self.model = model 
         self.data_type = data_type
         self.noise_std = noise_std
         self.noise_mode = noise_mode
         self.epsilon_min = epsilon_min
+        self.max_attempts = max_attempts
 
         if self.noise_mode not in ["per_frame", "per_video"]:
             raise ValueError("noise_mode must be either 'per_frame' OR 'per_video'")
@@ -73,7 +74,7 @@ class RIS_TEST:
         ratio = (a - b) / (a + self.epsilon_min) # deviation from (Agarwal, 2022) - need to add epsilon_min to denominator because skeleton_data contans zeros
         return torch.norm(ratio.flatten(), p=2)
 
-    def evaluate(self, input_tensor, saliency_map, explain_fn, num_perturbations=50, max_attempts=200):
+    def evaluate(self, input_tensor, saliency_map, explain_fn, num_perturbations=50):
 
         target_class = self._get_predicted_class(input_tensor)
         ratios = []
@@ -82,7 +83,7 @@ class RIS_TEST:
         while len(ratios) < num_perturbations:
             attempts += 1
 
-            if attempts > max_attempts:
+            if attempts > self.max_attempts:
                 # prevent potential infinite loop
                 break
 

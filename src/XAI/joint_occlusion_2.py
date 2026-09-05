@@ -1,6 +1,8 @@
 import torch
 import torch.nn.functional as F
 
+
+
 class JointOcclusion:
     def __init__(self, model, temporal_window_size=9, use_temporal_window=True, normalisation_mode="per_video"):
         self.model = model 
@@ -43,9 +45,6 @@ class JointOcclusion:
         return occluded
 
     def _normalise_saliency_map(self, saliency):
-        '''
-            saliency shape: [150, 17, 4]
-        '''
         if self.normalisation_mode == "per_frame":
             saliency_min = saliency.flatten(1).min(dim=1).values.view(-1, 1, 1)
             saliency_max = saliency.flatten(1).max(dim=1).values.view(-1, 1, 1)
@@ -75,7 +74,7 @@ class JointOcclusion:
 
             joint_importance = torch.zeros(T, V, M, device=input_tensor.device)
 
-            # calculate how many people are actually present 
+            # only consider detected joints
             has_confidence = input_tensor[0, 2] > 0 # shape [T, V, M]
 
             # joint importance

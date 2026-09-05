@@ -36,7 +36,6 @@ def get_empty_tensors(pose_dataset):
 
     print(f"Total samples: {len(pose_dataset)}")
     print(f"Empty tensors: {len(empty_indices)}")
-    print()
     print(f"Fight: {label_map['Fight']}")
     print(f"NonFight: {label_map['NonFight']}")
 

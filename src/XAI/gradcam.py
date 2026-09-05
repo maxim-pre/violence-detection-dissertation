@@ -28,9 +28,6 @@ class GradCAM:
         self.backward_hook.remove()
     
     def _normalise(self, cam):
-        '''
-            cam shape: [32, 224, 224] or [batch_size * num_frames, 224, 224] 
-        '''
         if self.normalisation_mode == "per_frame":
             cam_min = cam.flatten(1).min(dim=1).values.view(-1, 1, 1)
             cam_max = cam.flatten(1).max(dim=1).values.view(-1, 1, 1)
@@ -62,24 +59,24 @@ class GradCAM:
         score = logits[0, target_class]
         score.backward()
 
-        # activation: [T, 1280, 7, 7]
-        # gradient: [T, 1280, 7, 7]
+        # activation: [32, 1280, 7, 7]
+        # gradient: [32, 1280, 7, 7]
         activation = self.activations
         gradient = self.gradients
 
-        # weights: [T, 1280, 1, 1]
+        # weights: [32, 1280, 1, 1]
         weights = gradient.mean(dim=(2, 3), keepdim=True)
 
-        # cam: [T, 7, 7]
+        # cam: [32, 7, 7]
         cam = (weights * activation).sum(dim=1)
 
         cam = F.relu(cam)
 
 
-        #convert to: [T, 1, 7, 7]
+        #convert to: [32, 1, 7, 7]
         cam = cam.unsqueeze(1)
 
-        # resize heatmaps to the original input size: [B, num_frames, H, W]
+        # resize heatmaps to the original input size: [32, 1, 224, 224]
         cam = F.interpolate(
             cam,
             size=(H, W),
@@ -87,7 +84,7 @@ class GradCAM:
             align_corners=False
         )
 
-        cam = cam.squeeze(1)
+        cam = cam.squeeze(1) # [32, 224, 224]
         cam = self._normalise(cam)
         cam = cam.view(B, T, H, W)
 

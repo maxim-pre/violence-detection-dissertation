@@ -58,14 +58,11 @@ temp/
 
 script_running_command.txt
 
-
-generate_explanations_cnn_lstm.py
-generate_explanations_stgcn.py
 plotting_functions.py
 extract_dataset_frames.py
 \extracted_frames
 \frame_diff_figure
 \figures
 rise_evaluation_clips.json
-evaluate_cnn_lstm.py
-evaluate_stgcn.py
+
+abalation_over_val_set.py

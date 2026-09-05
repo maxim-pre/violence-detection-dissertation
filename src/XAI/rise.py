@@ -3,7 +3,7 @@ import torch.nn.functional as F
 import math
 
 class RISE:
-    def __init__(self, model, num_masks=8000, mask_batch_size=16, t=8, h=7, normalisation_mode="per_video"):
+    def __init__(self, model, num_masks=16000, mask_batch_size=16, t=8, h=7, normalisation_mode="per_video"):
         self.model = model
         self.num_masks = num_masks
         self.mask_batch_size = mask_batch_size
@@ -26,15 +26,7 @@ class RISE:
         C_w = W // self.h 
 
         # shape [num_masks, 8, 7, 7]
-        coarse_masks = (
-            torch.rand(
-                number_of_masks, 
-                self.t,
-                self.h, 
-                self.h,
-                device=device
-            ) < self.mask_probability
-        ).float()
+        coarse_masks = (torch.rand(number_of_masks, self.t, self.h, self.h, device=device) < self.mask_probability).float()
 
         # shape [num_masks, 1, 8, 7, 7]
         coarse_masks = coarse_masks.unsqueeze(1)
@@ -46,11 +38,7 @@ class RISE:
         # shape [num_masks, 1, 36, 256, 256]
         enlarged_masks = F.interpolate(
             coarse_masks, 
-            size=(
-                enlarged_temporal_size, 
-                enlarged_height, 
-                enlarged_width
-            ),
+            size=(enlarged_temporal_size, enlarged_height, enlarged_width),
             mode="trilinear",
             align_corners=False,
         ) 
@@ -76,9 +64,6 @@ class RISE:
         return masks
 
     def _normalise_saliency_map(self, saliency):
-        '''
-            saliency shape: [32, 7, 7] or [batch_size * T, 7, 7] 
-        '''
         if self.normalisation_mode == "per_frame":
             saliency_min = saliency.flatten(1).min(dim=1).values.view(-1, 1, 1)
             saliency_max = saliency.flatten(1).max(dim=1).values.view(-1, 1, 1)
@@ -129,7 +114,7 @@ class RISE:
         return normalised_saliency_map.detach()
 
 class SkeletonRise:
-    def __init__(self, model, num_masks=8000, mask_batch_size=16, t=17, normalisation_mode="per_video"):
+    def __init__(self, model, num_masks=16000, mask_batch_size=16, t=17, normalisation_mode="per_video"):
 
         self.model = model
         self.num_masks = num_masks

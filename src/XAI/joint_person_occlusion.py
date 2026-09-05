@@ -1,6 +1,10 @@
 import torch
 import torch.nn.functional as F
 
+#---------
+# NOT USED
+#---------
+
 class JointOcclusion:
     def __init__(self, model, temporal_window_size=9):
         self.model = model 
@@ -11,12 +15,6 @@ class JointOcclusion:
 
     @torch.inference_mode()
     def _predict(self, input_tensor):
-        '''
-        input_tensor: [1, C, T, V, M]
-        returns:
-            logits [1, 2]
-            probabilities [1, 2]
-        '''
 
         logits = self.model(input_tensor)
         probabilities = F.softmax(logits, dim=1)
@@ -30,9 +28,6 @@ class JointOcclusion:
         return start, end
     
     def _occlude_joint(self, input_tensor, frame_index, joint_index, person_index):
-        '''
-        returns a copy of the input with joint removed from one person inside temporal window centered around frame_index
-        '''
         B, C, T, V, M = input_tensor.shape
         num_frames = T 
         start, end = self._get_window_bounds(frame_index, num_frames)
@@ -41,9 +36,7 @@ class JointOcclusion:
         return occluded
 
     def _occlude_person(self, input_tensor, frame_index, person_index):
-        '''
-        returns a copy of the input with one person removed completely from temporal window centered around frame_index
-        '''
+
         B, C, T, V, M = input_tensor.shape
         num_frames = T 
         start, end = self._get_window_bounds(frame_index, num_frames)
@@ -54,12 +47,7 @@ class JointOcclusion:
 
     @torch.inference_mode()
     def explain(self, input_tensor, target_class=None):
-        '''
-            calculate joint and person importance (baseline importance - occluded importance)
-            returns:
-                joint_importance: shape [T, V, M]
-                person_importance: shape[T, M]
-        '''
+
         B, C, T, V, M = input_tensor.shape
         assert B == 1 # explain one video at a time
 

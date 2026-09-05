@@ -54,7 +54,7 @@ class MaskedBatchNorm2d(nn.BatchNorm2d):
             self.running_mean = (1 - self.momentum) * self.running_mean + self.momentum * batch_mean
             self.running_var = (1 - self.momentum) * self.running_var + self.momentum * batch_var
 
-        # can't use F.batch_norm with 2d
+        # can't use F.batch_norm with 2d for some reason
         mean = batch_mean.view(1, -1, 1, 1)   # [1, C, 1, 1]
         var = batch_var.view(1, -1, 1, 1)     
         weight = self.weight.view(1, -1, 1, 1)  
@@ -87,16 +87,16 @@ class SpatialGraphConv(nn.Module):
         )
 
     def forward(self, x, adjacency):
-        # x shape [B, C, T, V]
-        # adjacency shape [K, V, V]
-        # returns [B, out_channels, T, V]
+        # x shape [B, in_channels, 150, 17]
+        # adjacency shape [3, 17, 17]
+        # returns [B, out_channels, 150, 17]
 
-        x = self.channel_transform(x) # [B, K*out_channels, T, V]
+        x = self.channel_transform(x) # [B, 3*out_channels, 150, 17]
         B, _, T, V = x.shape
 
         x = x.reshape(B, self.num_partitions, self.out_channels, T, V)
 
-        # equation 10 in paper
+        # equation 10 in paper (sum feature maps from each partition)
         f_outs = []
         for k in range(self.num_partitions):
             output = torch.matmul(x[:, k], adjacency[k])
@@ -105,80 +105,6 @@ class SpatialGraphConv(nn.Module):
         f_out = sum(f_outs)
 
         return f_out
-# OLD ------------------------------------------------------------------------------------------------------
-class STGCNBlock(nn.Module):
-    def __init__(self,
-                in_channels, 
-                out_channels, 
-                num_partitions=3,
-                temporal_kernel_size=9, 
-                stride=1, 
-                dropout=0, 
-                residual=True,
-            ):
-        super().__init__()
-
-        if temporal_kernel_size % 2 == 0:
-            raise ValueError("temporal_kernel_size must be odd") # so there are an even number of frames before and after
-        
-        temporal_padding = (temporal_kernel_size - 1) // 2
-
-        self.spatial_graph_conv = SpatialGraphConv(
-            in_channels=in_channels,
-            out_channels=out_channels,
-            num_partitions=num_partitions
-        )
-
-        self.temporal_conv = nn.Sequential(
-            nn.BatchNorm2d(out_channels), 
-            nn.ReLU(inplace=True), 
-            nn.Conv2d(
-                in_channels=out_channels, 
-                out_channels=out_channels,
-                kernel_size=(temporal_kernel_size, 1),
-                stride=(stride, 1), 
-                padding=(temporal_padding, 0),
-                bias=False
-            ),
-            nn.BatchNorm2d(out_channels),
-            nn.Dropout(dropout),
-        )
-
-        self.residual = self._build_residual_connection(
-            in_channels=in_channels, 
-            out_channels=out_channels, 
-            stride=stride, 
-            residual=residual
-        )
-
-        self.relu = nn.ReLU(inplace=True)
-
-    def _build_residual_connection(self, in_channels, out_channels, stride, residual):
-        if not residual:
-            return lambda x: 0
-        elif (in_channels == out_channels) and (stride == 1): # tensor shape is the same so input can be added directly
-            return lambda x: x 
-        else:
-            return nn.Sequential(
-                nn.Conv2d(
-                    in_channels=in_channels, 
-                    out_channels=out_channels, 
-                    kernel_size=1, 
-                    stride=(stride, 1), 
-                    bias=False
-                ), 
-                nn.BatchNorm2d(out_channels)
-            )
-
-    def forward(self, x, adjacency):
-        residual_output = self.residual(x)
-        x = self.spatial_graph_conv(x, adjacency)
-        x = self.temporal_conv(x)
-        x = x + residual_output
-        x = self.relu(x)
-        return x
-
-# ------------------------------------------------------------------------------------------------
 
 class STGCNBlock(nn.Module):
     def __init__(self,
@@ -274,9 +200,7 @@ class STGCN(nn.Module):
                  edge_importance_weighting=True,
                  people_aggregation="masked_mean",
             ):
-        '''
-        adjacency shape: [K, V, V] where is number of partitions
-        '''
+        
         super().__init__()
 
         adjacency = torch.as_tensor(adjacency, dtype=torch.float32)
@@ -307,7 +231,7 @@ class STGCN(nn.Module):
         self.classifier = nn.Conv2d(in_channels=256, out_channels=2, kernel_size=1)
 
     def forward(self, x):
-        # x shape: [B, C, T, V, M]
+        # x shape: [B, 3, 150, 17, 4]
 
         B, C, T, V, M = x.shape
 
@@ -356,6 +280,8 @@ class STGCN(nn.Module):
         return x
 
 
+
+# not used 
 class STGCNV2(nn.Module):
     def __init__(self,
                  adjacency,

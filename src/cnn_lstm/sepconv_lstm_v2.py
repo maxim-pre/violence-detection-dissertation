@@ -79,9 +79,7 @@ class SepConvLSTM(nn.Module):
         )
 
     def forward(self, x):
-        """
-        x shape: (B, T, C, H, W)
-        """
+        # input shape: [B, 32, 96, 7, 7]
         B, T, C, H, W = x.shape
 
         h = torch.zeros(B, self.hidden_channels, H, W, device=x.device)
@@ -94,5 +92,6 @@ class SepConvLSTM(nn.Module):
             outputs.append(h)
 
         outputs = torch.stack(outputs, dim=1)
+        # shape: [B, 32, 64, 7, 7]
 
         return outputs

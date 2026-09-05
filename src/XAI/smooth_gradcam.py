@@ -33,9 +33,6 @@ class SmoothGradCAM:
         self.backward_hook.remove()
     
     def _normalise(self, cam):
-        '''
-            cam shape: [32, 224, 224] or [batch_size * num_frames, 224, 224] 
-        '''
         if self.normalisation_mode == "per_frame":
             cam_min = cam.flatten(1).min(dim=1).values.view(-1, 1, 1)
             cam_max = cam.flatten(1).max(dim=1).values.view(-1, 1, 1)
@@ -63,9 +60,7 @@ class SmoothGradCAM:
         return noise
     
     def _generate_single_cam(self, input_tensor, target_class):
-        '''
-        input_tensor shape = [1, 32, 3, 224, 224]
-        '''
+        # input_tensor shape = [1, 32, 3, 224, 224]
 
         self.model.zero_grad(set_to_none=True)
         logits = self.model(input_tensor)
@@ -74,7 +69,7 @@ class SmoothGradCAM:
         weights = self.gradients.mean(dim=(2, 3), keepdim=True)
         cam = (weights * self.activations).sum(dim=1)
         cam = F.relu(cam)
-        return cam
+        return cam # [32, 7, 7]
     
 
     def generate_heatmap(self, input_tensor, target_class=None):

@@ -165,15 +165,7 @@ def build_pose_dataset(
     return failed_videos
 
 def pose_data_to_stgcn_tensor(pose_data, num_frames=150, num_keypoints=17, max_people=4, track_score_mode="total_confidence"):
-    '''
-    convert pose data -> (3, 150, 17, 4)
-
-    where: 
-        C = (normalised_X_coordinate, normalised_Y_coordinate, confidence)
-        T = number of frames
-        V = number of keypoints
-        M = maximum number of tracked people
-    '''
+    #convert pose data -> [3, 150, 17, 4]
 
     H, W = pose_data["original_video_shape"]
 
@@ -240,71 +232,5 @@ def pose_data_to_stgcn_tensor(pose_data, num_frames=150, num_keypoints=17, max_p
 
     return tensor
 
-def save_annotated_pose_videos(
-    model,
-    pose_files,
-    dataset_root,
-    split,
-    tracker="bytetrack.yaml",
-):
-    device = str(get_available_device())
-    dataset_root = Path(dataset_root)
-
-    for pose_path in tqdm(pose_files, desc="Saving annotated videos"):
-
-        pose_path = Path(pose_path)
-
-        class_name = pose_path.parent.name
-        video_name = pose_path.stem
-
-        video_path = dataset_root / split / class_name / f"{video_name}.avi"
-
-        if not video_path.exists():
-            print(f"Missing video: {video_path}")
-            continue
-
-        for _ in model.track(
-            source=str(video_path),
-            tracker=tracker,
-            save=True,
-            stream=True,
-            persist=True,
-            exist_ok=True,
-            verbose=False,
-            device=device,
-        ):
-            pass
-
-    print("Finished saving annotated videos.")
 
 
-def get_empty_tensors(pose_dataset):
-
-    empty_indices = []
-    empty_files = []
-    label_map = {
-        "Fight": 0,
-        "NonFight": 0,
-    }
-
-    for index in tqdm(range(len(pose_dataset))):
-
-        skeleton, label = pose_dataset[index]
-
-        if torch.count_nonzero(skeleton) == 0:
-
-            pose_path, _ = pose_dataset.samples[index]
-
-            class_name = "Fight" if label.item() == 1 else "NonFight"
-
-            empty_indices.append(index)
-            empty_files.append((pose_path, label))
-            label_map[class_name] += 1
-
-    print(f"Total samples: {len(pose_dataset)}")
-    print(f"Empty tensors: {len(empty_indices)}")
-    print()
-    print(f"Fight: {label_map['Fight']}")
-    print(f"NonFight: {label_map['NonFight']}")
-
-    return empty_files

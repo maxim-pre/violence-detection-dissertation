@@ -6,128 +6,6 @@ import cv2
 import numpy as np
 from pathlib import Path
 
-def _squeeze_batch_dim(heatmaps):
-    if heatmaps.dim() == 4 and heatmaps.shape[0] == 1:
-        heatmaps = heatmaps.squeeze(0)
-    return heatmaps
- 
- 
-def plot_heatmap_over_rgb(heatmaps, rgb_frames, label, prediction, alpha=0.45, technique_name="gradcam"):
-    class_labels = {0: "Non-Violent", 1: "Violent"}
- 
-    heatmaps = _squeeze_batch_dim(heatmaps)
-    num_frames = heatmaps.shape[0]
-    fig, axes = plt.subplots(4, 8, figsize=(20, 10))
- 
-    for i, ax in enumerate(axes.flatten()):
-        if i >= num_frames:
-            ax.axis("off")
-            continue
- 
-        rgb_frame = rgb_frames[i + 1]
- 
-        # [C, H, W] -> [H, W, C]
-        rgb_frame = rgb_frame.permute(1, 2, 0).cpu()
- 
-        heatmap = heatmaps[i].cpu()
- 
-        ax.imshow(rgb_frame)
-        ax.imshow(
-            heatmap,
-            cmap="jet",
-            alpha=alpha,
-            vmin=0,
-            vmax=1,
-        )
- 
-        ax.set_title(f"Frame {i + 1}")
-        ax.axis("off")
-    plt.suptitle(
-        f"{technique_name}\n"
-        f"Prediction: {class_labels[prediction]} | "
-        f"Truth: {class_labels[label]}",
-        fontsize=16,
-    )
-    plt.tight_layout()
-    plt.show()
- 
-def animate_saliency_over_rgb(
-    heatmaps,
-    rgb_frames,
-    label,
-    prediction,
-    alpha=0.45,
-    interval=150,
-):
-    """
-    heatmaps: [num_frames, H, W]
-    rgb_frames: [num_frames + 1, 3, H, W]
-    interval: Delay between frames in milliseconds.
-    """
-
-    class_names = {
-        0: "NonFight",
-        1: "Fight",
-    }
-
-    heatmaps = heatmaps.detach().cpu()
-    rgb_frames = rgb_frames.detach().cpu()
-
-    num_frames = heatmaps.shape[0]
-
-    fig, ax = plt.subplots(figsize=(7, 7))
-
-    # Heatmap 0 corresponds to RGB frame 1.
-    first_rgb = rgb_frames[1].permute(1, 2, 0)
-    first_heatmap = heatmaps[0]
-
-    rgb_display = ax.imshow(first_rgb)
-
-    heatmap_display = ax.imshow(
-        first_heatmap,
-        cmap="jet",
-        alpha=alpha,
-        vmin=0,
-        vmax=1,
-    )
-
-    title = ax.set_title(
-        f"Frame 1/{num_frames}\n"
-        f"Prediction: {class_names[prediction]} | "
-        f"Ground Truth: {class_names[label]}"
-    )
-
-    ax.axis("off")
-
-    def update(frame_index):
-        # Use frame_index + 1 because each heatmap explains a frame difference.
-        rgb_frame = rgb_frames[frame_index + 1].permute(1, 2, 0)
-        heatmap = heatmaps[frame_index]
-
-        rgb_display.set_data(rgb_frame)
-        heatmap_display.set_data(heatmap)
-
-        title.set_text(
-            f"Frame {frame_index + 1}/{num_frames}\n"
-            f"Prediction: {class_names[prediction]} | "
-            f"Ground Truth: {class_names[label]}"
-        )
-
-        return rgb_display, heatmap_display, title
-
-    animation = FuncAnimation(
-        fig,
-        update,
-        frames=num_frames,
-        interval=interval,
-        blit=False,
-        repeat=True,
-    )
-
-    plt.close(fig)
-
-    return animation
-
 # skeleton plotting functions
 
 SKELETON_EDGES = [
@@ -152,109 +30,106 @@ SKELETON_EDGES = [
     [4, 6],
 ]
 
-def plot_joint_importance_grid(rgb_frames, pose_tensor, joint_importance, label, prediction, num_frames_to_show=32):
-    """
-    Grid of evenly-spaced frames with skeleton overlays coloured by joint
-    importance, styled to match plot_gradcam_over_rgb's layout for the
-    CNN-LSTM so the two models' figures look consistent.
- 
-    rgb_frames:       [T, 3, H, W]
-    pose_tensor:      [1, 3, T, V, M]
-    joint_importance: [T, V, M] - assumed non-negative and normalised to
-                       [0, 1], matching every technique in this work after
-                       ReLU + per_video min-max normalisation.
-    """
-    class_names = {0: "NonFight", 1: "Fight"}
- 
-    T = joint_importance.shape[0]
-    frame_indices = np.linspace(0, T - 1, num_frames_to_show).astype(int)
- 
-    pose = pose_tensor[0].detach().cpu()
-    num_people = pose.shape[-1]
-    scores_all = joint_importance.detach().cpu()
- 
-    # colour scale shared across every frame in the grid, so importance is
-    # comparable frame-to-frame rather than each subplot rescaling itself
-    max_score = max(scores_all.max().item(), 1e-8)
-    colour_map = plt.get_cmap("jet")
-    colour_norm = Normalize(vmin=0, vmax=max_score)
- 
-    fig, axes = plt.subplots(4, 8, figsize=(20, 11))
- 
-    for i, ax in enumerate(axes.flatten()):
-        if i >= len(frame_indices):
-            ax.axis("off")
-            continue
- 
-        frame_index = int(frame_indices[i])
- 
-        frame = rgb_frames[frame_index].permute(1, 2, 0).cpu()
-        H, W, _ = frame.shape
-        ax.imshow(frame)
- 
+
+def plot_saliency(rgb_frame, saliency_frame, ax=None, is_skeleton=False, pose_frame=None,
+                   title=None, max_alpha=0.75, cmap="jet",
+                   discretise=False, thresholds=(0.33, 0.66), discrete_colours=("blue", "yellow", "red")):
+
+    if ax is None:
+        fig, ax = plt.subplots(figsize=(6, 6))
+
+    rgb = rgb_frame.permute(1, 2, 0).cpu().numpy()
+    H, W = rgb.shape[:2]
+    ax.imshow(rgb)
+
+    if discretise and len(discrete_colours) != len(thresholds) + 1:
+        raise ValueError("discrete_colours must have exactly len(thresholds) + 1 entries")
+
+    def get_colour(normalised_value, colour_map):
+        if not discretise:
+            return colour_map(normalised_value)
+
+        for bin_index, threshold in enumerate(thresholds):
+            if normalised_value < threshold:
+                return discrete_colours[bin_index]
+        return discrete_colours[-1]
+
+    if not is_skeleton:
+        sal = saliency_frame.cpu().numpy()
+        colour_map = plt.get_cmap(cmap)
+        coloured = colour_map(sal)
+        coloured[..., 3] = sal * max_alpha
+        ax.imshow(coloured, extent=(0, W, H, 0))
+
+    else:
+        colour_map = plt.get_cmap(cmap)
+        colour_norm = Normalize(vmin=0, vmax=1.0)
+        num_people = pose_frame.shape[-1]
+
         for person_index in range(num_people):
-            x = pose[0, frame_index, :, person_index] * W
-            y = pose[1, frame_index, :, person_index] * H
-            confidence = pose[2, frame_index, :, person_index]
- 
-            # skip padded person slots containing no pose data
-            if confidence.sum().item() == 0:
+            confidence = pose_frame[2, :, person_index]
+            x = pose_frame[0, :, person_index] * W
+            y = pose_frame[1, :, person_index] * H
+            scores = saliency_frame[:, person_index]
+
+            if confidence.sum() == 0:
                 continue
- 
-            scores = scores_all[frame_index, :, person_index]
- 
-            # only draw an edge if both endpoint joints were actually detected -
-            # otherwise a missing joint's (0, 0) padded coordinate gets drawn
-            # as a real point, producing a spurious line to the frame corner
+
             for joint_a, joint_b in SKELETON_EDGES:
                 if confidence[joint_a] == 0 or confidence[joint_b] == 0:
                     continue
- 
                 edge_score = (scores[joint_a] + scores[joint_b]) / 2
+                edge_colour = get_colour(colour_norm(edge_score.item()), colour_map)
                 ax.plot(
-                    [x[joint_a], x[joint_b]],
-                    [y[joint_a], y[joint_b]],
-                    color=colour_map(colour_norm(edge_score.item())),
-                    linewidth=3,        # was 2 - thicker for visibility
-                    alpha=0.9,
-                    solid_capstyle="round",
+                    [x[joint_a], x[joint_b]], [y[joint_a], y[joint_b]],
+                    color=edge_colour,
+                    linewidth=1, alpha=0.9, solid_capstyle="round",
                 )
- 
+
             for joint_index in range(len(x)):
                 if confidence[joint_index] == 0:
                     continue
- 
+                joint_colour = get_colour(colour_norm(scores[joint_index].item()), colour_map)
                 ax.scatter(
-                    x[joint_index],
-                    y[joint_index],
-                    color=colour_map(colour_norm(scores[joint_index].item())),
-                    s=45,               # was 25 - larger markers
-                    edgecolor="white",  # was black - reads better on both dark and light backgrounds
-                    linewidth=1,
-                    zorder=3,
+                    x[joint_index], y[joint_index],
+                    color=joint_colour,
+                    s=15, edgecolor="white", linewidth=0.2, zorder=3,
                 )
- 
-        ax.set_title(f"Frame {frame_index}", fontsize=9)
-        ax.axis("off")
- 
-    plt.suptitle(
-        f"Joint Importance\n"
-        f"Prediction: {class_names[prediction]} | "
-        f"Truth: {class_names[label]}",
-        fontsize=16,
-    )
- 
-    # single shared colorbar for the whole grid, rather than per-subplot -
-    # without this there is no way to tell what a given colour actually
-    # means, or whether a uniform-looking grid reflects genuinely uniform
-    # importance or just poor contrast
-    scalar_mappable = plt.cm.ScalarMappable(norm=colour_norm, cmap=colour_map)
-    scalar_mappable.set_array([])
-    colorbar = fig.colorbar(scalar_mappable, ax=axes, fraction=0.02, pad=0.02, shrink=0.8)
-    colorbar.set_label("Joint / edge importance")
- 
-    plt.show()
 
+    ax.axis("off")
+    if title:
+        ax.set_title(title, fontsize=9)
+    return ax
+
+
+def plot_saliency_grid(rgb_frames, saliency_map, is_skeleton=False, pose_tensor=None,
+                        label=None, prediction=None, num_frames_to_show=32, **kwargs):
+
+    class_names = {0: "NonFight", 1: "Fight"}
+    T = saliency_map.shape[0]
+    frame_indices = np.linspace(0, T - 1, num_frames_to_show).astype(int)
+
+    ncols = 8
+    nrows = -(-num_frames_to_show // ncols)
+    fig, axes = plt.subplots(nrows, ncols, figsize=(ncols * 2.5, nrows * 2.5))
+    axes = axes.flatten()
+
+    for ax, frame_index in zip(axes, frame_indices):
+        frame_index = int(frame_index)
+        pose_frame = pose_tensor[0, :, frame_index] if is_skeleton else None
+        plot_saliency(
+            rgb_frames[frame_index], saliency_map[frame_index], ax=ax,
+            is_skeleton=is_skeleton, pose_frame=pose_frame,
+            title=f"Frame {frame_index}", **kwargs,
+        )
+
+    for ax in axes[len(frame_indices):]:
+        ax.axis("off")
+
+    if label is not None and prediction is not None:
+        plt.suptitle(f"Prediction: {class_names[prediction]} | Truth: {class_names[label]}", fontsize=14)
+    plt.tight_layout()
+    plt.show()
 
 
 
