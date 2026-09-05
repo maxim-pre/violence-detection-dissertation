@@ -45,7 +45,7 @@ def measure_frame_importance_by_occlusion(model, video_tensor, target_class, bas
     return confidence_drops
 
 
-def run_ablation_over_validation_set(model, gradcam_results_dir, dataset_root, output_dir, predicted_class_name=None):
+def run_test(model, gradcam_results_dir, dataset_root, output_dir, predicted_class_name=None):
 
     val_dataset = RWF2000Dataset(
         dataset_root,
@@ -95,4 +95,4 @@ def run_ablation_over_validation_set(model, gradcam_results_dir, dataset_root, o
 if __name__ == "__main__":
     model = load_final_cnn_lstm_model()
     gradcam_dir = CNN_LSTM_XAI_RESULTS / "gradcam"
-    mean_drops_all, n_all = run_ablation_over_validation_set(model, gradcam_dir, DATASET_ROOT, RESULTS_DIR)
+    mean_drops_all, n_all = run_test(model, gradcam_dir, DATASET_ROOT, RESULTS_DIR)
