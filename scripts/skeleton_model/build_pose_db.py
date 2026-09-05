@@ -10,7 +10,7 @@ from pathlib import Path
 
 if __name__ == "__main__":
 
-    new_dataset_root = Path("/homes/mp2940/demo/datasets/rwf-2000/pose_data_bytetrack")
+    new_dataset_root = Path("/homes/mp2940/demo/datasets/rwf-2000/pose_data_ocsort")
 
     train_dataset = RWF2000Dataset(
         DATASET_ROOT, 
@@ -36,7 +36,7 @@ if __name__ == "__main__":
         output_root=new_dataset_root,
         model=model,
         device=device,
-        tracker="bytetrack.yaml"
+        tracker="ocsort.yaml"
     )
 
     with open("failed_train_pose_extractions.json", "w") as file:
@@ -50,9 +50,9 @@ if __name__ == "__main__":
         output_root=new_dataset_root,
         model=model,
         device=device,
-        tracker="bytetrack.yaml"
+        tracker="ocsort.yaml"
     )
 
-    with open("failed_pose_extractions.json", "w") as file:
+    with open("failed_val_pose_extractions.json", "w") as file:
         json.dump(failed_val, file, indent=2)
 
