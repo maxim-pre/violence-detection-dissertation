@@ -1,12 +1,8 @@
 import matplotlib.pyplot as plt
 import matplotlib.pyplot as plt
 from matplotlib.colors import Normalize
-from matplotlib.animation import FuncAnimation
-import cv2
 import numpy as np
-from pathlib import Path
 
-# skeleton plotting functions
 
 SKELETON_EDGES = [
     [15, 13],
@@ -38,32 +34,33 @@ def plot_saliency(rgb_frame, saliency_frame, ax=None, is_skeleton=False, pose_fr
     if ax is None:
         fig, ax = plt.subplots(figsize=(6, 6))
 
+    # plot rgb frame
     rgb = rgb_frame.permute(1, 2, 0).cpu().numpy()
     H, W = rgb.shape[:2]
     ax.imshow(rgb)
 
+    colour_map = plt.get_cmap(cmap)
+
     if discretise and len(discrete_colours) != len(thresholds) + 1:
         raise ValueError("discrete_colours must have exactly len(thresholds) + 1 entries")
 
-    def get_colour(normalised_value, colour_map):
+    # used for skeleton plotting
+    def get_colour(score):
         if not discretise:
-            return colour_map(normalised_value)
+            return colour_map(score)
 
         for bin_index, threshold in enumerate(thresholds):
-            if normalised_value < threshold:
+            if score < threshold:
                 return discrete_colours[bin_index]
         return discrete_colours[-1]
 
     if not is_skeleton:
-        sal = saliency_frame.cpu().numpy()
-        colour_map = plt.get_cmap(cmap)
-        coloured = colour_map(sal)
-        coloured[..., 3] = sal * max_alpha
-        ax.imshow(coloured, extent=(0, W, H, 0))
+        saliency = saliency_frame.cpu().numpy()
+        overlay = colour_map(saliency)
+        overlay[..., 3] = saliency * max_alpha
+        ax.imshow(overlay, extent=(0, W, H, 0))
 
     else:
-        colour_map = plt.get_cmap(cmap)
-        colour_norm = Normalize(vmin=0, vmax=1.0)
         num_people = pose_frame.shape[-1]
 
         for person_index in range(num_people):
@@ -72,24 +69,27 @@ def plot_saliency(rgb_frame, saliency_frame, ax=None, is_skeleton=False, pose_fr
             y = pose_frame[1, :, person_index] * H
             scores = saliency_frame[:, person_index]
 
+            # skip empty slots
             if confidence.sum() == 0:
                 continue
 
+            # plot edges
             for joint_a, joint_b in SKELETON_EDGES:
-                if confidence[joint_a] == 0 or confidence[joint_b] == 0:
-                    continue
+                if confidence[joint_a] == 0 or confidence[joint_b] == 0: continue
+
                 edge_score = (scores[joint_a] + scores[joint_b]) / 2
-                edge_colour = get_colour(colour_norm(edge_score.item()), colour_map)
+                edge_colour = get_colour(edge_score.item())
                 ax.plot(
                     [x[joint_a], x[joint_b]], [y[joint_a], y[joint_b]],
                     color=edge_colour,
                     linewidth=1, alpha=0.9, solid_capstyle="round",
                 )
 
+            # plot joints
             for joint_index in range(len(x)):
-                if confidence[joint_index] == 0:
-                    continue
-                joint_colour = get_colour(colour_norm(scores[joint_index].item()), colour_map)
+                if confidence[joint_index] == 0: continue
+
+                joint_colour = get_colour(scores[joint_index].item())
                 ax.scatter(
                     x[joint_index], y[joint_index],
                     color=joint_colour,
@@ -110,7 +110,7 @@ def plot_saliency_grid(rgb_frames, saliency_map, is_skeleton=False, pose_tensor=
     frame_indices = np.linspace(0, T - 1, num_frames_to_show).astype(int)
 
     ncols = 8
-    nrows = -(-num_frames_to_show // ncols)
+    nrows = int(np.ceil(num_frames_to_show / ncols))
     fig, axes = plt.subplots(nrows, ncols, figsize=(ncols * 2.5, nrows * 2.5))
     axes = axes.flatten()
 

@@ -1,0 +1,22 @@
+{
+    "seed": 42,
+    "use_gamma_corrected_data": false,
+    "max_people": 4,
+    "score_mode": "total_confidence",
+    "batch_size": 12,
+    "augment": true,
+    "epochs": 60,
+    "learning_rate": 0.0003,
+    "min_lr": 1e-06,
+    "scheduler_patience": 5,
+    "factor": 0.5,
+    "early_stopping_patience": 20,
+    "amsgrad": false,
+    "weight_decay": 5e-05,
+    "label_smoothing": 0.2,
+    "adjacency_normalisation_mode": "column",
+    "temporal_kernel_size": 9,
+    "dropout": 0.3,
+    "edge_importance_weighting": true,
+    "people_aggregation": "masked_mean"
+}

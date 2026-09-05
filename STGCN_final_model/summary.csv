@@ -1,0 +1,2 @@
+run_name,seed,use_gamma_corrected_data,max_people,score_mode,batch_size,augment,epochs,learning_rate,min_lr,scheduler_patience,factor,early_stopping_patience,amsgrad,weight_decay,label_smoothing,adjacency_normalisation_mode,temporal_kernel_size,dropout,edge_importance_weighting,people_aggregation,best_val_acc,final_train_acc,final_val_acc,final_train_loss,final_val_loss,epochs_ran
+final_seed42,42,False,4,total_confidence,12,True,60,0.0003,1e-06,5,0.5,20,False,5e-05,0.2,column,9,0.3,True,masked_mean,0.8,0.841875,0.79,0.5177845768630505,0.6338128438591957,60

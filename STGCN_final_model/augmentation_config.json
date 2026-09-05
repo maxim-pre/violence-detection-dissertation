@@ -1,0 +1,17 @@
+{
+    "whole_occlusion_min_frames": 10,
+    "whole_occlusion_max_frames": 25,
+    "whole_occlusion_probability": 0.5,
+    "body_part_interpolation_min_frames": 1,
+    "body_part_interpolation_max_frames": 10,
+    "body_part_interpolation_probability": 0.65,
+    "interpolation_min_frames": 1,
+    "interpolation_max_frames": 10,
+    "interpolation_probability": 0.65,
+    "swap_min_frames": 1,
+    "swap_max_frames": 4,
+    "swap_probability": 0.5,
+    "mirror_min_frames": 1,
+    "mirror_max_frames": 4,
+    "mirror_probability": 0.5
+}

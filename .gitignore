@@ -58,11 +58,11 @@ temp/
 
 script_running_command.txt
 
-plotting_functions.py
 extract_dataset_frames.py
 \extracted_frames
 \frame_diff_figure
 \figures
 rise_evaluation_clips.json
 
-abalation_over_val_set.py
+!STGCN_final_model/best_model.pt
+!CNN_LSTM_final_model/best_model.pt
