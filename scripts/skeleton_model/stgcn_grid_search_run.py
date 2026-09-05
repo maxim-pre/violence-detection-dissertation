@@ -5,7 +5,7 @@ from itertools import product
 
 
 if __name__ == "__main__":
-    model_version = "1"  # Change to "2" for STGCNV2
+    model_version = "1"  
 
     if model_version == "1":
         experiment_root = CHECKPOINT_DIR / "STGCN_V1" / "final_seed_search_no_aug_2"

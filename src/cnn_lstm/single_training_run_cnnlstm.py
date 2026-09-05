@@ -32,6 +32,7 @@ def train_single_run(hyperparameters, device, save_dir, run_name, model_version=
         json.dump(augmentation_config, f, indent=4)
 
     if model_version == "1":
+        raise(ValueError("model version 1 was excluded"))
         model = CNNLSTMV1(
             hidden_size=hyperparameters["hidden_size"],
             num_layers=hyperparameters["num_layers"], 
@@ -41,6 +42,7 @@ def train_single_run(hyperparameters, device, save_dir, run_name, model_version=
         ).to(device)
     
     elif model_version == "2" or model_version == "3":
+        raise(ValueError("model version 2 & 3 was excluded"))
         model = CNNLSTMV2(
             hidden_channels=hyperparameters["hidden_channels"],
             reduced_channels=hyperparameters["reduced_channels"],

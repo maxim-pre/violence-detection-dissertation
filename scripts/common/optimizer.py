@@ -11,6 +11,7 @@ def build_optimizer(model, hyperparameters):
             weight_decay=hyperparameters["weight_decay"]
         )
 
+    # everything below here is irrelevant for the final CNN_LSTM Model, which froze the cnn
     param_groups = []
 
     if hasattr(model, "cnn"):

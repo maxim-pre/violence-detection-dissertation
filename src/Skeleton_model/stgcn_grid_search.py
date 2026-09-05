@@ -58,6 +58,7 @@ def grid_search(search_space, experiment_root=None, model_version="1"):
         if model_version == "1":
             model = STGCN(skeleton_graph.A, temporal_kernel_size=hyperparameters["temporal_kernel_size"], dropout=hyperparameters["dropout"], edge_importance_weighting=hyperparameters["edge_importance_weighting"], people_aggregation=hyperparameters["people_aggregation"]).to(device)
         else:
+            raise ValueError("only model version 1 was the final model")
             model = STGCNV2(skeleton_graph.A, temporal_kernel_size=hyperparameters["temporal_kernel_size"], dropout=hyperparameters["dropout"], edge_importance_weighting=hyperparameters["edge_importance_weighting"]).to(device)
 
         try:
