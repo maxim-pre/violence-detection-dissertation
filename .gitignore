@@ -35,23 +35,12 @@ outputs/
 runs/
 pose_visualisations
 
-# Data
-data/
-datasets/
-
 # Model files
 *.pth
 *.pt
-*.ckpt
-*.onnx
-
-# Experiment artifacts
-wandb/
-mlruns/
 
 # Temporary files
 tmp/
-temp/
 
 # Environment variables / secrets
 .env.local
