@@ -44,6 +44,21 @@ The CNN-LSTM detects violence from sequences of RGB frame differences. The pre-t
 ![Grad-CAM digram](static/cnn_lstm_diagram.png)
 
 ### ST-GCN
+The Spatial-Temporal Graph Convolutional Network (ST-GCN) detects violence from sequences of human skeletal keypoints. Human poses are estimated and tracked across each video before the ST-GCN learns spatial and temporal patterns from dynamic skeletal data to predict violence.
+
+1. Human poses are estimated in each video frame using a pre-trained pose estimation model from Ultralytics. 17 skeletal keypoints are detected for each person, with consistent identities maintained across frames.
+
+2. The pose data is converted into a fixed-size tensor containing the X and Y coordinates and confidence score of each joint across all 150 frames. Up to 4 people are represented.
+
+3. The X and Y coordinates are normalised relative to the video's resolution. During training, skeleton-specific augmentations including frame occlusion, interpolation, keypoint swapping, and mirroring are applied to improve generalisation and robustness to pose estimation errors.
+
+4. Each skeleton is represented as a spatiotemporal graph. Human joints are modelled as graph nodes with spatial edges corresponding to anatomical connections, and temporal edges connecting joints between
+consecutive frames. Graph convolutions are then performed over this spatiotemporal graph to extract spatiotemporal features.
+
+5. The spatiotemporal graphs are passed through 10 ST-GCN units. Each unit applies spatial and temporal convolutions.
+
+6. Global average pooling produces a feature vector for each tracked person. Features from non-empty tracks are averaged to form a single video representation, which is then passed through the final classification layer to produce the Fight or Non-Fight prediction.
+
 ![ST-GCN diagram](static/stgcn_diagram.png)
 
 ## Explainable AI Methods
