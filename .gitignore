@@ -68,3 +68,4 @@ rise_evaluation_clips.json
 !CNN_LSTM_final_model/best_model.pt
 !cnn_lstm_diagram.png
 !stgcn_diagram.png
+!overview.png

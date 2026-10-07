@@ -2,6 +2,8 @@
 
 ## Overview
 
+![overview](static/overview.png)
+
 ## Models
 
 ### CNN-LSTM
