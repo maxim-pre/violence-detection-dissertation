@@ -5,9 +5,10 @@
 ## Models
 
 ### CNN-LSTM
-![Grad-CAM explanation](static/cnn_lstm_diagram.png)
+![Grad-CAM digram](static/cnn_lstm_diagram.png)
 
 ### ST-GCN
+![ST-GCN diagram](static/stgcn_diagram.png)
 
 ## Explainable AI Methods
 
