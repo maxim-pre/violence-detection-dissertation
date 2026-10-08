@@ -113,19 +113,33 @@ The training and validation accuracy curves for both models are shown below.
 
 Each XAI technique were quantitatively evaluated using measures of:
 
-- **Faithfulness** - How accurately the saliency maps reflect the features influencing model predictions.
-- **Stability** - How consistent the saliency maps are when the input is slightly perturbed.
+- **Faithfulness** - How accurately the saliency maps reflect the features influencing model predictions, measured using insertion and deltion AUC tests. 
+- **Stability** - How consistent the saliency maps are when the input is slightly perturbed, measured using Relative Input Sability (RIS)
 - **Computational efficiency** - The time taken to produce the saliency map. 
 
 <p align="center">
   <strong>CNN-LSTM XAI results</strong>
   <br><br>
-  <img src="static/cnn_lstm_xai" width="80%">
+  <img src="static/cnn_lstm_xai.png" width="100%">
   <br><br><br>
   <strong>ST-GCN XAI results</strong>
   <br><br>
-  <img src="static/stgcn_xai" width="80%">
+  <img src="static/stgcn_xai.png" width="100%">
 </p>
+
+
+## Main Contributions
+
+- Comparative evaluation of Grad-CAM-based and perturbation-based XAI techniques across two violence detection models with substantially different input representations.
+- Adaptation of perturbation-based XAI techniques to temporally structured, multi-person skeleton inputs, including a skeleton-specific RISE masking strategy and Joint Occlusion approach.
+
+## Key Findings
+
+- The CNN-LSTM exhibited a genuine late-frame bias, particularly towards the final frame.
+- Multilayer Grad-CAM produced substantially more stable explanations than conventional Grad-CAM, without a major trade-off in faithfulness or computational efficiency.
+- Some XAI techniques produced class-dependent explanations, particularly in their temporal saliency distributions.
+- Perturbation-based explanations were more faithful than STG-Grad-CAM for the ST-GCN.
+- The sparsity of Joint Occlusion explanations suggested that the ST-GCN had limited dependence on most individual joints over short temporal windows.
 
 
 
