@@ -61,7 +61,34 @@ consecutive frames. Graph convolutions are then performed over this spatiotempor
 
 ![ST-GCN diagram](static/stgcn_diagram.png)
 
-## Explainable AI Methods
+## Explainable AI Techniques
+
+Gradient- and perturbation-based XAI techniques were implemented to generate saliency maps highlighting the input features most influential to each model's prediction. Where applicable, the techniques were adapted to the different input representations of the CNN-LSTM and ST-GCN.
+
+### Grad-CAM
+The technique computes the gradient of the target-class prediction (Fight or Non-Fight) with respect to the feature maps of the last convolutional layer. These gradients are used to calculate an importance weight for each feature map in the layer's output. The gradient-weighted sum of the feature maps produces the saliency map.
+
+### Multilayer Grad-CAM
+This technique applied the Grad-CAM formulation to multiple layers in the CNN, not just the last one. The saliency maps at each convolutional layer were combined using an unweighted average. 
+
+### SmoothGrad-CAM
+
+This technique applies the same Grad-CAM formulation but computes the final saliency map by averaging Grad-CAM saliency maps generated from multiple noisy versions of the input. This aims to reduce noise and produce more stable explanations.
+
+### RISE
+The method works by randomly masking parts of the input and observing how the output changes. Regions whose removal results in lower prediction confidence are considered more important. The final saliency map is produced by weighting and aggregating the random masks according to the model's prediction confidence.
+
+### Occlusion Sensitivity
+
+Similar to RISE, this method works by masking parts of the input and observing how the output changes. Instead of applying many random masks, it systematically masks predefined regions of the input. This was applied to ST-GCN where individual joints were systematiclly occluded across a small temporal window.
+<p align="center">
+  <img src="static/cnn_lstm_saliency_maps.png" width="80%" style="margin-bottom: 30px;">
+  <br><br>
+  <img src="static/stgcn_saliency_maps.png" width="80%">
+</p>
+
+### quantitative results
+
 
 
 
