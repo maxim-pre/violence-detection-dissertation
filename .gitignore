@@ -71,3 +71,6 @@ rise_evaluation_clips.json
 !overview.png
 !cnn_lstm_saliency_maps.png
 !stgcn_saliency_maps.png
+!cnn_lstm_xai.png
+!stgcn_xai.png
+

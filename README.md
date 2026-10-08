@@ -81,13 +81,53 @@ The method works by randomly masking parts of the input and observing how the ou
 ### Occlusion Sensitivity
 
 Similar to RISE, this method works by masking parts of the input and observing how the output changes. Instead of applying many random masks, it systematically masks predefined regions of the input. This was applied to ST-GCN where individual joints were systematiclly occluded across a small temporal window.
+
+
 <p align="center">
-  <img src="static/cnn_lstm_saliency_maps.png" width="80%" style="margin-bottom: 30px;">
+  <strong>CNN-LSTM saliency maps example</strong>
+  <br><br>
+  <img src="static/cnn_lstm_saliency_maps.png" width="80%">
+  <br><br><br>
+  <strong>ST-GCN saliency maps example</strong>
   <br><br>
   <img src="static/stgcn_saliency_maps.png" width="80%">
 </p>
 
-### quantitative results
+
+## Classification Performance
+
+The CNN-LSTM and ST-GCN models were evaluated on the RWF-2000 validation set, consisting of 400 videos.
+
+| Model | Validation Accuracy | Recall (Fight) |
+|---|---:|---:|
+| CNN-LSTM | 87% | 84.5% |
+| ST-GCN | 80% | 92.5% |
+
+The training and validation accuracy curves for both models are shown below.
+
+<p align="center">
+  <img src="static/acc_curves.png" width="100%">
+</p>
+
+## XAI quantitative results
+
+Each XAI technique were quantitatively evaluated using measures of:
+
+- **Faithfulness** - How accurately the saliency maps reflect the features influencing model predictions.
+- **Stability** - How consistent the saliency maps are when the input is slightly perturbed.
+- **Computational efficiency** - The time taken to produce the saliency map. 
+
+<p align="center">
+  <strong>CNN-LSTM XAI results</strong>
+  <br><br>
+  <img src="static/cnn_lstm_xai" width="80%">
+  <br><br><br>
+  <strong>ST-GCN XAI results</strong>
+  <br><br>
+  <img src="static/stgcn_xai" width="80%">
+</p>
+
+
 
 
 
